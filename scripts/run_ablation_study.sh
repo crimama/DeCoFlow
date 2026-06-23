@@ -22,7 +22,7 @@ EPOCHS=60
 LR="3e-4"
 LORA_RANK=64
 COUPLING_LAYERS=8
-ACB_BLOCKS=4
+ACL_LAYERS=4
 BATCH_SIZE=16
 LOG_DIR="./logs/Ablation"
 
@@ -40,8 +40,8 @@ BASE_CMD="python run_decoflow.py \
     --lora_rank ${LORA_RANK} \
     --num_coupling_layers ${COUPLING_LAYERS} \
     --batch_size ${BATCH_SIZE} \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --use_tsa \
     --use_tail_aware_loss \
     --tail_weight 0.7 \
@@ -61,9 +61,9 @@ run_core_ablation() {
     echo "Core Component Ablation Experiments (v2)"
     echo "========================================"
 
-    # 1.1 wo_ACB: Disable Auxiliary Coupling Blocks
-    echo "[1.1] Running wo_ACB-v2..."
-    $BASE_CMD --no_acb --experiment_name "MVTec-Main-Ablation-wo_ACB"
+    # 1.1 wo_ACL: Disable Auxiliary Coupling Layer
+    echo "[1.1] Running wo_ACL-v2..."
+    $BASE_CMD --no_acl --experiment_name "MVTec-Main-Ablation-wo_ACL"
 
     # 1.2 wo_Adapter: Disable TSA Adapter
     echo "[1.2] Running wo_Adapter-v2..."
@@ -133,7 +133,7 @@ run_design_ablation() {
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
         --no_lora \
-        --no_acb \
+        --no_acl \
         --no_task_adapter \
         --use_tail_aware_loss \
         --tail_weight 0.7 \
@@ -155,12 +155,12 @@ run_combination_ablation() {
     echo "Module Combination Ablation Experiments"
     echo "========================================"
 
-    # 4.1 wo_ACB + wo_Adapter
-    echo "[4.1] Running wo_ACB + wo_Adapter..."
+    # 4.1 wo_ACL + wo_Adapter
+    echo "[4.1] Running wo_ACL + wo_Adapter..."
     $BASE_CMD \
-        --no_acb \
+        --no_acl \
         --no_task_adapter \
-        --experiment_name "MVTec-Main-Ablation-wo_ACB_Adapter"
+        --experiment_name "MVTec-Main-Ablation-wo_ACL_Adapter"
 
     # 4.2 LoRA Only
     echo "[4.2] Running LoRA Only..."
@@ -174,7 +174,7 @@ run_combination_ablation() {
         --lora_rank ${LORA_RANK} \
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
-        --no_acb \
+        --no_acl \
         --no_task_adapter \
         --no_spatial_context \
         --no_scale_context \
@@ -225,10 +225,10 @@ case "$1" in
         echo "Usage: $0 {core|context|design|combination|all}"
         echo ""
         echo "Sections:"
-        echo "  core        - Core component ablation (wo_ACB, wo_Adapter, wo_LoRA, wo_Router)"
+        echo "  core        - Core component ablation (wo_ACL, wo_Adapter, wo_LoRA, wo_Router)"
         echo "  context     - Context module ablation (wo_PosEmbed, wo_SpatialCtx, wo_ScaleCtx)"
         echo "  design      - Design choice ablation (RegularLinear, TaskSeparated, AllShared)"
-        echo "  combination - Module combination ablation (wo_ACB_Adapter, LoRA-Only)"
+        echo "  combination - Module combination ablation (wo_ACL_Adapter, LoRA-Only)"
         echo "  all         - Run ALL experiments"
         echo ""
         echo "Estimated time: ~4 hours per experiment (60 epochs, 15 classes)"

@@ -2,12 +2,12 @@
 """
 Enhanced Block-wise Analysis (Fig. 6 — Multi-Panel)
 
-Three complementary metrics measured after each DCL/ACL block:
+Three complementary metrics measured after each DCL/ACL layer:
   (a) Q-Q Correlation — marginal Gaussianity (existing metric)
   (b) Cross-Covariance Off-Diagonal Norm — cross-dimensional independence
   (c) Per-block |log-det J| — transformation magnitude
 
-Architecture: 6 DCL blocks (FrEIA) + 2 ACL blocks (ACB AffineCoupling)
+Architecture: 6 DCL blocks (FrEIA) + 2 ACL layers (ACL AffineCoupling)
 
 Key Hypothesis:
   - DCL primarily does cross-dimensional disentangling (visible in metric b)
@@ -55,7 +55,7 @@ BACKBONE_NAME = "wide_resnet50_2"
 EMBED_DIM = 768
 IMG_SIZE = 224
 NUM_COUPLING_LAYERS = 6
-ACB_N_BLOCKS = 2
+ACL_N_LAYERS = 2
 LORA_RANK = 64
 LORA_ALPHA = 1.0
 USE_HIGH_RES = True
@@ -138,8 +138,8 @@ def build_ablation_config():
     config.spatial_context_kernel = 3
     config.use_scale_context = True
     config.scale_context_kernel = 5
-    config.use_acb = True
-    config.acb_n_blocks = ACB_N_BLOCKS
+    config.use_acl = True
+    config.acl_n_layers = ACL_N_LAYERS
     config.use_tsa = True
     config.use_tail_aware_loss = True
     config.tail_weight = 0.85
@@ -152,7 +152,7 @@ def build_ablation_config():
 def forward_with_hooks(nf_model, features, task_id):
     """
     Run forward pass capturing intermediate z AND per-block log-det
-    after each DCL and ACL block.
+    after each DCL and ACL layer.
 
     Returns:
         intermediates: dict of block_name → (z_cpu, log_det_cpu)
@@ -200,13 +200,13 @@ def forward_with_hooks(nf_model, features, task_id):
     if nf_model.use_scale_context:
         DCLContextSubnet._spatial_info = None
 
-    # --- ACL blocks (ACB) ---
-    if nf_model.use_acb and nf_model.current_task_id is not None:
+    # --- ACL layers (ACL) ---
+    if nf_model.use_acl and nf_model.current_task_id is not None:
         task_key = str(nf_model.current_task_id)
-        if task_key in nf_model.acb_adapters:
-            acb = nf_model.acb_adapters[task_key]
+        if task_key in nf_model.acl_adapters:
+            acl = nf_model.acl_adapters[task_key]
             z = x_tuple[0].reshape(B, H, W, D)
-            for j, block in enumerate(acb.coupling_blocks):
+            for j, block in enumerate(acl.coupling_blocks):
                 z, block_logdet = block(z, reverse=False)
                 intermediates["acl" + str(j + 1)] = (
                     z.detach().cpu(),
@@ -489,7 +489,7 @@ def main():
             "backbone": BACKBONE_NAME,
             "embed_dim": EMBED_DIM,
             "num_dcl_blocks": NUM_COUPLING_LAYERS,
-            "num_acl_blocks": ACB_N_BLOCKS,
+            "num_acl_layers": ACL_N_LAYERS,
             "lora_rank": LORA_RANK,
             "checkpoint": CHECKPOINT_DIR,
             "num_batches": NUM_BATCHES,

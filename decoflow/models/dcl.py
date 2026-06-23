@@ -188,7 +188,7 @@ class DCLSubnet(nn.Module):
     - use_task_bias: If False, skip task-specific bias
     - use_regular_linear: If True, use regular nn.Linear instead of LoRA (V6-Exp1)
     - use_spectral_norm: If True, apply spectral normalization (V6-Exp3)
-    - subnet_depth: 2 (default) or 3 (deeper, matching ACB SimpleSubnet depth)
+    - subnet_depth: 2 (default) or 3 (deeper, matching ACL SimpleSubnet depth)
     """
 
     def __init__(self, dims_in: int, dims_out: int, rank: int = 4, alpha: float = 1.0,
@@ -833,12 +833,12 @@ class TaskConditionedMSContext(nn.Module):
 
 
 # =============================================================================
-# V3 Solution 1: Auxiliary Coupling Blocks (ACB)
+# V3 Solution 1: Auxiliary Coupling Layer (ACL)
 # =============================================================================
 
-class AuxiliaryCouplingBlocks(nn.Module):
+class AuxiliaryCouplingLayer(nn.Module):
     """
-    Auxiliary Coupling Blocks (ACB) - V3 Solution 1 (No Replay).
+    Auxiliary Coupling Layer (ACL) - V3 Solution 1 (No Replay).
 
     Key Insight:
     Instead of linear LoRA (W + BA), we add a small task-specific Flow
@@ -846,21 +846,21 @@ class AuxiliaryCouplingBlocks(nn.Module):
 
     Architecture:
     - Base NF: Frozen after Task 0 (extracts common features)
-    - ACB: 1-2 lightweight coupling blocks per task (learns task-specific warping)
+    - ACL: 1-2 lightweight coupling layers per task (learns task-specific warping)
 
-    The ACB is invertible, so it preserves the density estimation property.
-    Each task has its own ACB, achieving complete parameter isolation.
+    The ACL is invertible, so it preserves the density estimation property.
+    Each task has its own ACL, achieving complete parameter isolation.
 
     Mathematical Formulation:
     - Base: z_base = f_base(x)
-    - ACB:  z_final = f_ACB_t(z_base)
-    - log p(x) = log p(z_final) + log|det J_base| + log|det J_ACB|
+    - ACL:  z_final = f_ACL_t(z_base)
+    - log p(x) = log p(z_final) + log|det J_base| + log|det J_ACL|
     """
 
     def __init__(self,
                  channels: int,
                  task_id: int,
-                 n_blocks: int = 2,
+                 n_layers: int = 2,
                  hidden_ratio: float = 0.5,
                  clamp_alpha: float = 1.9,
                  use_gate: bool = False,
@@ -871,28 +871,28 @@ class AuxiliaryCouplingBlocks(nn.Module):
         Args:
             channels: Feature dimension
             task_id: Task identifier
-            n_blocks: Number of coupling blocks (1-2 recommended)
+            n_layers: Number of coupling layers (1-2 recommended)
             hidden_ratio: Hidden dim = channels * hidden_ratio
             clamp_alpha: Clamping for affine coupling
-            use_gate: Enable learnable gate α in coupling blocks
+            use_gate: Enable learnable gate α in coupling layers
             gate_init: Raw init value for sigmoid gate
             subnet_type: 'fc' (SimpleSubnet MLP) or 'spatial' (SpatialSubnet depthwise conv)
             kernel_size: Kernel size for spatial subnet (default: 3)
         """
-        super(AuxiliaryCouplingBlocks, self).__init__()
+        super(AuxiliaryCouplingLayer, self).__init__()
 
         self.channels = channels
         self.task_id = task_id
-        self.n_blocks = n_blocks
+        self.n_layers = n_layers
         self.clamp_alpha = clamp_alpha
         self.subnet_type = subnet_type
 
         hidden_dim = int(channels * hidden_ratio)
 
-        # Build mini-flow: sequence of coupling blocks
+        # Build mini-flow: sequence of coupling layers
         self.coupling_blocks = nn.ModuleList()
 
-        for i in range(n_blocks):
+        for i in range(n_layers):
             # Alternate which half is transformed
             self.coupling_blocks.append(
                 AffineCouplingBlock(
@@ -968,7 +968,7 @@ class PerTaskLatentAffine(nn.Module):
 
     This is a simple, invertible module that provides per-task nonlinear adaptation
     in the latent space AFTER the base normalizing flow. It serves as a lightweight
-    alternative to ACB (Auxiliary Coupling Blocks).
+    alternative to ACL (Auxiliary Coupling Layer).
 
     Key properties:
     - Invertible: z = (z_out - shift) / exp(log_scale)
@@ -1014,7 +1014,7 @@ class PerTaskLatentAffine(nn.Module):
 
 class AffineCouplingBlock(nn.Module):
     """
-    Affine Coupling Block for ACB.
+    Affine Coupling Block for ACL.
 
     Split input into two halves, transform one conditioned on the other:
     y1 = x1
@@ -1039,7 +1039,7 @@ class AffineCouplingBlock(nn.Module):
         self.reverse_split = reverse
         self.subnet_type = subnet_type
 
-        # V45: Learnable gate for ACB strength control
+        # V45: Learnable gate for ACL strength control
         self.use_gate = use_gate
         if use_gate:
             self.gate_raw = nn.Parameter(torch.tensor(gate_init))
@@ -1091,7 +1091,7 @@ class AffineCouplingBlock(nn.Module):
         # Clamp scale for numerical stability
         s = self.clamp_alpha * torch.tanh(s / self.clamp_alpha)
 
-        # V45: Apply gate to control ACB strength
+        # V45: Apply gate to control ACL strength
         if self.use_gate:
             gate = torch.sigmoid(self.gate_raw)
             s = gate * s
@@ -1116,7 +1116,7 @@ class AffineCouplingBlock(nn.Module):
 
 
 class SimpleSubnet(nn.Module):
-    """Simple MLP subnet for ACB coupling blocks."""
+    """Simple MLP subnet for ACL coupling layers."""
 
     def __init__(self, in_dim: int, out_dim: int, hidden_dim: int):
         super(SimpleSubnet, self).__init__()
@@ -1139,7 +1139,7 @@ class SimpleSubnet(nn.Module):
 
 class SpatialSubnet(nn.Module):
     """
-    V46: Depthwise-separable subnet for spatial-aware ACB coupling blocks.
+    V46: Depthwise-separable subnet for spatial-aware ACL coupling layers.
 
     Replaces FC-based SimpleSubnet to preserve spatial information.
     Uses depthwise conv (patch-local spatial mixing) + pointwise conv (channel mixing).

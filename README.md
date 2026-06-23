@@ -12,7 +12,7 @@ This repository contains the code-only release of DeCoFlow. The public naming fo
 - `DCL`: Decomposed Coupling Layer with frozen base weights and task-specific LoRA adapters
 - `TSA`: Task-Specific Alignment
 - `TAL`: Tail-Aware Loss
-- `ACB`: Auxiliary Coupling Blocks
+- `ACL`: Auxiliary Coupling Layer
 
 ## Contents
 
@@ -39,8 +39,8 @@ python run_decoflow.py \
   --num_epochs 60 \
   --num_coupling_layers 6 \
   --use_tsa \
-  --use_acb \
-  --acb_n_blocks 2 \
+  --use_acl \
+  --acl_n_layers 2 \
   --use_tail_aware_loss
 ```
 

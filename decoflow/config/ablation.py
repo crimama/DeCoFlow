@@ -59,15 +59,15 @@ class AblationConfig:
     # ==========================================================================
     # Class-Level Adapter Management
     # ==========================================================================
-    # When enabled, creates separate adapters (LoRA, ACB, TaskSpecificAlignment, Prototype)
+    # When enabled, creates separate adapters (LoRA, ACL, TaskSpecificAlignment, Prototype)
     # for each class instead of each task. This allows finer-grained learning when
     # multiple classes are grouped into a single task (step).
     #
     # Example with use_class_level_adapters=False (default):
-    #   Task 0: [leather, grid, transistor] -> 1 LoRA, 1 ACB, 1 Prototype
+    #   Task 0: [leather, grid, transistor] -> 1 LoRA, 1 ACL, 1 Prototype
     #
     # Example with use_class_level_adapters=True:
-    #   Task 0: [leather, grid, transistor] -> 3 LoRAs, 3 ACBs, 3 Prototypes
+    #   Task 0: [leather, grid, transistor] -> 3 LoRAs, 3 ACLs, 3 Prototypes
     use_class_level_adapters: bool = False
 
     # LoRA configuration (only used if use_lora=True)
@@ -312,31 +312,31 @@ class AblationConfig:
     stn_pretrain_epochs: int = 0                  # Optional: pretrain STN before main training
 
     # ==========================================================================
-    # V3 No-Replay Solutions: ACB + OGP
+    # V3 No-Replay Solutions: ACL + OGP
     # ==========================================================================
 
-    # Auxiliary Coupling Blocks (ACB)
+    # Auxiliary Coupling Layer (ACL)
     # Adds a small task-specific flow after base NF for nonlinear manifold adaptation
-    use_acb: bool = True
-    acb_n_blocks: int = 2                    # Number of coupling blocks per ACB (MAIN: 2)
-    acb_hidden_ratio: float = 0.5            # Hidden dim = channels * hidden_ratio
+    use_acl: bool = True
+    acl_n_layers: int = 2                    # Number of coupling layers per ACL (MAIN: 2)
+    acl_hidden_ratio: float = 0.5            # Hidden dim = channels * hidden_ratio
 
-    # V45: Per-class ACB blocks (JSON dict, e.g. '{"grid":2,"cable":2}')
-    # Empty string = use acb_n_blocks for all classes. Default fallback = 1 block.
-    per_class_acb_blocks: str = ""
-    # V45: Learnable gate α in ACB coupling blocks
-    acb_gate: bool = False
-    acb_gate_init: float = 0.0               # Raw sigmoid init (2.0→0.88, -2.0→0.12)
-    acb_gate_l1_lambda: float = 0.0          # L1 reg on gate values (0=disabled)
-    # V45: ACB-specific weight decay (0=use default optimizer WD)
-    acb_weight_decay: float = 0.0
+    # V45: Per-class ACL layers (JSON dict, e.g. '{"grid":2,"cable":2}')
+    # Empty string = use acl_n_layers for all classes. Default fallback = 1 layer.
+    per_class_acl_layers: str = ""
+    # V45: Learnable gate α in ACL coupling layers
+    acl_gate: bool = False
+    acl_gate_init: float = 0.0               # Raw sigmoid init (2.0→0.88, -2.0→0.12)
+    acl_gate_l1_lambda: float = 0.0          # L1 reg on gate values (0=disabled)
+    # V45: ACL-specific weight decay (0=use default optimizer WD)
+    acl_weight_decay: float = 0.0
     # V45: Spatial variance preservation loss (0=disabled)
     spatial_var_lambda: float = 0.0
 
-    # V46: Spatial ACB — replace FC subnets with depthwise-separable convolutions
+    # V46: Spatial ACL — replace FC subnets with depthwise-separable convolutions
     # 'fc' = original SimpleSubnet (MLP), 'spatial' = SpatialSubnet (depthwise conv)
-    acb_subnet_type: str = 'fc'
-    acb_kernel_size: int = 3                     # Kernel size for spatial ACB (3 or 5)
+    acl_subnet_type: str = 'fc'
+    acl_kernel_size: int = 3                     # Kernel size for spatial ACL (3 or 5)
 
     # Subnet depth (number of Linear layers in coupling subnet)
     # 2 = default (Linear→ReLU→Linear), 3 = deeper (Linear→ReLU→Linear→ReLU→Linear)
@@ -379,7 +379,7 @@ class AblationConfig:
     use_nonlinear_lora: bool = False
     nonlinear_lora_alpha: float = 0.5          # Sinter amplitude: x + alpha * sin(x)
 
-    # Per-Task Latent Affine (applied after base NF, before ACB if both enabled)
+    # Per-Task Latent Affine (applied after base NF, before ACL if both enabled)
     # Learnable scale+shift per task in latent space with exact log-determinant
     use_latent_affine: bool = False
 
@@ -463,10 +463,10 @@ class AblationConfig:
         if self.use_adaptive_unfreeze and not (self.use_ewc or self.use_distillation or self.use_feature_bank):
             print("⚠️  Warning: use_adaptive_unfreeze without EWC/distillation/feature_bank may cause forgetting")
 
-        # V7: DSM auto-disables ACB (Flow itself acts as density function)
-        if self.use_dsm and self.use_acb:
-            print("⚠️  Warning: DSM enabled → ACB auto-disabled (Flow is the density function)")
-            self.use_acb = False
+        # V7: DSM auto-disables ACL (Flow itself acts as density function)
+        if self.use_dsm and self.use_acl:
+            print("⚠️  Warning: DSM enabled → ACL auto-disabled (Flow is the density function)")
+            self.use_acl = False
 
     def get_active_components(self) -> list:
         """Return list of active component names."""
@@ -503,8 +503,8 @@ class AblationConfig:
             components.append("HybridRouting")
         if self.use_regional_prototype:
             components.append("RegionalProto")
-        if self.use_acb:
-            components.append("ACB")
+        if self.use_acl:
+            components.append("ACL")
         if self.use_ogp:
             components.append("OGP")
         if self.use_task_conditioned_ms_context:
@@ -550,8 +550,8 @@ class AblationConfig:
             v3_parts.append("hybrid")
         if self.use_regional_prototype:
             v3_parts.append("regional")
-        if self.use_acb:
-            v3_parts.append("acb")
+        if self.use_acl:
+            v3_parts.append("acl")
         if self.use_ogp:
             v3_parts.append("ogp")
         if self.use_task_conditioned_ms_context:
@@ -705,7 +705,7 @@ def add_ablation_args(parser):
     # Class-level adapter management
     ablation_group.add_argument(
         '--use_class_level_adapters', action='store_true',
-        help='Create separate adapters (LoRA, ACB, Prototype) per class instead of per task'
+        help='Create separate adapters (LoRA, ACL, Prototype) per class instead of per task'
     )
 
     # Adapter mode options
@@ -859,66 +859,66 @@ def add_ablation_args(parser):
     )
 
     # =========================================================================
-    # V3 No-Replay Solutions: ACB + OGP
+    # V3 No-Replay Solutions: ACL + OGP
     # =========================================================================
-    noreplay_group = parser.add_argument_group('V3 No-Replay Solutions (ACB/OGP)')
+    noreplay_group = parser.add_argument_group('V3 No-Replay Solutions (ACL/OGP)')
 
-    # Auxiliary Coupling Blocks (ACB)
+    # Auxiliary Coupling Layer (ACL)
     noreplay_group.add_argument(
-        '--use_acb', action='store_true',
-        help='[V3] Use Auxiliary Coupling Blocks for nonlinear manifold adaptation'
+        '--use_acl', action='store_true',
+        help='[V3] Use Auxiliary Coupling Layer for nonlinear manifold adaptation'
     )
     noreplay_group.add_argument(
-        '--no_acb', action='store_true',
-        help='[V3] Disable Auxiliary Coupling Blocks - for ablation study'
+        '--no_acl', action='store_true',
+        help='[V3] Disable Auxiliary Coupling Layer - for ablation study'
     )
     noreplay_group.add_argument(
-        '--acb_n_blocks', type=int, default=2,
-        help='Number of coupling blocks per ACB (default: 2)'
+        '--acl_n_layers', type=int, default=2,
+        help='Number of coupling layers per ACL (default: 2)'
     )
     noreplay_group.add_argument(
-        '--acb_hidden_ratio', type=float, default=0.5,
-        help='Hidden dim ratio for ACB (default: 0.5)'
+        '--acl_hidden_ratio', type=float, default=0.5,
+        help='Hidden dim ratio for ACL (default: 0.5)'
     )
-    # V45: ACB gating and regularization
+    # V45: ACL gating and regularization
     noreplay_group.add_argument(
-        '--per_class_acb_blocks', type=str, default='',
-        help='JSON dict for per-class ACB blocks, e.g. \'{"grid":2,"cable":2}\' (empty=use acb_n_blocks)'
-    )
-    noreplay_group.add_argument(
-        '--acb_gate', action='store_true',
-        help='Enable learnable gate α in ACB coupling blocks'
+        '--per_class_acl_layers', type=str, default='',
+        help='JSON dict for per-class ACL layers, e.g. \'{"grid":2,"cable":2}\' (empty=use acl_n_layers)'
     )
     noreplay_group.add_argument(
-        '--acb_gate_init', type=float, default=0.0,
-        help='Raw sigmoid init for ACB gate (2.0→0.88, -2.0→0.12, default: 0.0)'
+        '--acl_gate', action='store_true',
+        help='Enable learnable gate α in ACL coupling layers'
     )
     noreplay_group.add_argument(
-        '--acb_gate_l1_lambda', type=float, default=0.0,
-        help='L1 regularization lambda on ACB gate values (0=disabled)'
+        '--acl_gate_init', type=float, default=0.0,
+        help='Raw sigmoid init for ACL gate (2.0→0.88, -2.0→0.12, default: 0.0)'
     )
     noreplay_group.add_argument(
-        '--acb_weight_decay', type=float, default=0.0,
-        help='Extra weight decay for ACB params only (0=use default optimizer WD)'
+        '--acl_gate_l1_lambda', type=float, default=0.0,
+        help='L1 regularization lambda on ACL gate values (0=disabled)'
+    )
+    noreplay_group.add_argument(
+        '--acl_weight_decay', type=float, default=0.0,
+        help='Extra weight decay for ACL params only (0=use default optimizer WD)'
     )
     noreplay_group.add_argument(
         '--spatial_var_lambda', type=float, default=0.0,
         help='Spatial variance preservation loss lambda (0=disabled)'
     )
-    # V46: Spatial ACB
+    # V46: Spatial ACL
     noreplay_group.add_argument(
-        '--acb_subnet_type', type=str, default='fc', choices=['fc', 'spatial'],
-        help='[V46] ACB subnet type: fc (MLP) or spatial (depthwise conv)'
+        '--acl_subnet_type', type=str, default='fc', choices=['fc', 'spatial'],
+        help='[V46] ACL subnet type: fc (MLP) or spatial (depthwise conv)'
     )
     noreplay_group.add_argument(
-        '--acb_kernel_size', type=int, default=3,
-        help='[V46] Kernel size for spatial ACB (default: 3)'
+        '--acl_kernel_size', type=int, default=3,
+        help='[V46] Kernel size for spatial ACL (default: 3)'
     )
 
     # Subnet depth
     noreplay_group.add_argument(
         '--subnet_depth', type=int, default=2,
-        help='Number of Linear layers in coupling subnet (2=default, 3=deeper like ACB)'
+        help='Number of Linear layers in coupling subnet (2=default, 3=deeper like ACL)'
     )
     noreplay_group.add_argument(
         '--subnet_hidden_ratio', type=float, default=2.0,
@@ -1499,37 +1499,37 @@ def parse_ablation_args(parsed_args) -> AblationConfig:
         config.regional_prototype_grid = parsed_args.regional_prototype_grid
 
     # =========================================================================
-    # V3 No-Replay Solutions: ACB + OGP
+    # V3 No-Replay Solutions: ACL + OGP
     # =========================================================================
 
-    # Auxiliary Coupling Blocks (ACB)
-    if hasattr(parsed_args, 'no_acb') and parsed_args.no_acb:
-        config.use_acb = False
-    elif hasattr(parsed_args, 'use_acb') and parsed_args.use_acb:
-        config.use_acb = True
-    if hasattr(parsed_args, 'acb_n_blocks'):
-        config.acb_n_blocks = parsed_args.acb_n_blocks
-    if hasattr(parsed_args, 'acb_hidden_ratio'):
-        config.acb_hidden_ratio = parsed_args.acb_hidden_ratio
-    # V45: ACB gating and regularization
-    if hasattr(parsed_args, 'per_class_acb_blocks'):
-        config.per_class_acb_blocks = parsed_args.per_class_acb_blocks
-    if hasattr(parsed_args, 'acb_gate') and parsed_args.acb_gate:
-        config.acb_gate = True
-    if hasattr(parsed_args, 'acb_gate_init'):
-        config.acb_gate_init = parsed_args.acb_gate_init
-    if hasattr(parsed_args, 'acb_gate_l1_lambda'):
-        config.acb_gate_l1_lambda = parsed_args.acb_gate_l1_lambda
-    if hasattr(parsed_args, 'acb_weight_decay'):
-        config.acb_weight_decay = parsed_args.acb_weight_decay
+    # Auxiliary Coupling Layer (ACL)
+    if hasattr(parsed_args, 'no_acl') and parsed_args.no_acl:
+        config.use_acl = False
+    elif hasattr(parsed_args, 'use_acl') and parsed_args.use_acl:
+        config.use_acl = True
+    if hasattr(parsed_args, 'acl_n_layers'):
+        config.acl_n_layers = parsed_args.acl_n_layers
+    if hasattr(parsed_args, 'acl_hidden_ratio'):
+        config.acl_hidden_ratio = parsed_args.acl_hidden_ratio
+    # V45: ACL gating and regularization
+    if hasattr(parsed_args, 'per_class_acl_layers'):
+        config.per_class_acl_layers = parsed_args.per_class_acl_layers
+    if hasattr(parsed_args, 'acl_gate') and parsed_args.acl_gate:
+        config.acl_gate = True
+    if hasattr(parsed_args, 'acl_gate_init'):
+        config.acl_gate_init = parsed_args.acl_gate_init
+    if hasattr(parsed_args, 'acl_gate_l1_lambda'):
+        config.acl_gate_l1_lambda = parsed_args.acl_gate_l1_lambda
+    if hasattr(parsed_args, 'acl_weight_decay'):
+        config.acl_weight_decay = parsed_args.acl_weight_decay
     if hasattr(parsed_args, 'spatial_var_lambda'):
         config.spatial_var_lambda = parsed_args.spatial_var_lambda
 
-    # V46: Spatial ACB settings
-    if hasattr(parsed_args, 'acb_subnet_type'):
-        config.acb_subnet_type = parsed_args.acb_subnet_type
-    if hasattr(parsed_args, 'acb_kernel_size'):
-        config.acb_kernel_size = parsed_args.acb_kernel_size
+    # V46: Spatial ACL settings
+    if hasattr(parsed_args, 'acl_subnet_type'):
+        config.acl_subnet_type = parsed_args.acl_subnet_type
+    if hasattr(parsed_args, 'acl_kernel_size'):
+        config.acl_kernel_size = parsed_args.acl_kernel_size
 
     # Subnet depth
     if hasattr(parsed_args, 'subnet_depth'):

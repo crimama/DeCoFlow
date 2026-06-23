@@ -6,7 +6,7 @@ Runs gradient analysis on 4 diverse tasks (cable, grid, metal_nut, transistor)
 with 30 batches each, then reports mean +/- std for all gradient ratios.
 
 Uses EXACT V48_01 config: img_size=224, use_high_res=True, embed_dim=768,
-NCL6+ACB2, rank64, tail_weight=0.85, tail_top_k_ratio=0.02.
+NCL6+ACL2, rank64, tail_weight=0.85, tail_top_k_ratio=0.02.
 
 Usage:
   CUDA_VISIBLE_DEVICES=2 python scripts/run_gradient_analysis_multi.py \
@@ -66,8 +66,8 @@ def create_model_and_extractor(device):
     ablation_config = AblationConfig(
         use_lora=True,
         use_tsa=True,
-        use_acb=True,
-        acb_n_blocks=2,
+        use_acl=True,
+        acl_n_layers=2,
         use_tail_aware_loss=True,
         tail_weight=0.85,
         tail_top_k_ratio=0.02,

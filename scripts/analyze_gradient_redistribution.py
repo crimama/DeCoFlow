@@ -88,7 +88,7 @@ def main():
     print("Feature shape: ({}, {}, {})".format(fH, fW, embed_dim))
 
     pos_embed_gen = PositionalEmbeddingGenerator(device=device)
-    ablation_config = AblationConfig(use_lora=True, use_tsa=True, use_acb=True, scale_context_kernel=cfg.get("ablation", {}).get("scale_context_kernel", 5), acb_n_blocks=cfg.get("ablation", {}).get("acb_n_blocks", 2), use_tail_aware_loss=True, tail_weight=0.85, tail_top_k_ratio=0.02)
+    ablation_config = AblationConfig(use_lora=True, use_tsa=True, use_acl=True, scale_context_kernel=cfg.get("ablation", {}).get("scale_context_kernel", 5), acl_n_layers=cfg.get("ablation", {}).get("acl_n_layers", 2), use_tail_aware_loss=True, tail_weight=0.85, tail_top_k_ratio=0.02)
     nf_model = DeCoFlowNF(embed_dim=embed_dim, coupling_layers=ncl, clamp_alpha=1.9,
         lora_rank=lora_rank, lora_alpha=1.0, device=device, ablation_config=ablation_config)
 

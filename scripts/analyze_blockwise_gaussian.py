@@ -3,11 +3,11 @@
 Block-wise Gaussian Convergence Analysis (Fig. 6)
 
 Analyzes how the latent distribution progressively converges to N(0,I)
-as data passes through DCL1->DCL6->ACL1->ACL2 blocks.
+as data passes through DCL1->DCL6->ACL1->ACL2 layers.
 
 Architecture:
   - 6 DCL blocks: FrEIA SequenceINN with AllInOneBlock modules
-  - 2 ACL (ACB) blocks: AuxiliaryCouplingBlocks with AffineCouplingBlock modules
+  - 2 ACL layers: AuxiliaryCouplingLayer with AffineCouplingBlock modules
 
 Produces:
   - Line plot: Q-Q correlation vs block index
@@ -53,7 +53,7 @@ BACKBONE_NAME = "wide_resnet50_2"
 EMBED_DIM = 768
 IMG_SIZE = 224
 NUM_COUPLING_LAYERS = 6
-ACB_N_BLOCKS = 2
+ACL_N_LAYERS = 2
 LORA_RANK = 64
 LORA_ALPHA = 1.0
 USE_HIGH_RES = True
@@ -99,8 +99,8 @@ def build_ablation_config():
     config.spatial_context_kernel = 3
     config.use_scale_context = True
     config.scale_context_kernel = 5
-    config.use_acb = True
-    config.acb_n_blocks = ACB_N_BLOCKS
+    config.use_acl = True
+    config.acl_n_layers = ACL_N_LAYERS
     config.use_tsa = True
     config.use_tail_aware_loss = True
     config.tail_weight = 0.85
@@ -112,7 +112,7 @@ def build_ablation_config():
 
 def forward_with_hooks(nf_model, features, task_id):
     """
-    Run forward pass capturing intermediate z after each DCL and ACL block.
+    Run forward pass capturing intermediate z after each DCL and ACL layer.
 
     Returns dict with keys input, dcl1..dcl6, acl1, acl2,
     each mapping to a CPU tensor of shape (B, H, W, D).
@@ -156,13 +156,13 @@ def forward_with_hooks(nf_model, features, task_id):
     if nf_model.use_scale_context:
         DCLContextSubnet._spatial_info = None
 
-    # --- ACL blocks (ACB) ---
-    if nf_model.use_acb and nf_model.current_task_id is not None:
+    # --- ACL layers (ACL) ---
+    if nf_model.use_acl and nf_model.current_task_id is not None:
         task_key = str(nf_model.current_task_id)
-        if task_key in nf_model.acb_adapters:
-            acb = nf_model.acb_adapters[task_key]
+        if task_key in nf_model.acl_adapters:
+            acl = nf_model.acl_adapters[task_key]
             z = x_tuple[0].reshape(B, H, W, D)
-            for j, block in enumerate(acb.coupling_blocks):
+            for j, block in enumerate(acl.coupling_blocks):
                 z, _ = block(z, reverse=False)
                 intermediates["acl" + str(j + 1)] = z.detach().cpu()
 
@@ -177,7 +177,7 @@ def main():
     print("  Checkpoint:", CHECKPOINT_DIR)
     print("  Backbone:", BACKBONE_NAME)
     print("  Embed dim:", EMBED_DIM)
-    print("  Architecture: %d DCL + %d ACL blocks" % (NUM_COUPLING_LAYERS, ACB_N_BLOCKS))
+    print("  Architecture: %d DCL + %d ACL layers" % (NUM_COUPLING_LAYERS, ACL_N_LAYERS))
     print("  Classes:", len(ALL_CLASSES))
     print("  Batches per class: %d (batch_size=%d)" % (NUM_BATCHES, BATCH_SIZE))
     print()
@@ -373,7 +373,7 @@ def main():
             "backbone": BACKBONE_NAME,
             "embed_dim": EMBED_DIM,
             "num_dcl_blocks": NUM_COUPLING_LAYERS,
-            "num_acl_blocks": ACB_N_BLOCKS,
+            "num_acl_layers": ACL_N_LAYERS,
             "lora_rank": LORA_RANK,
             "checkpoint": CHECKPOINT_DIR,
             "num_batches": NUM_BATCHES,

@@ -1,7 +1,7 @@
 #!/bin/bash
 # V61: VisA SOTA Seed Experiments (V59_04 config)
 # 5 seeds × GPU 0-4
-# Config: NCL10+ACB6, ViT224, vit_blocks [1,2,3,5], rank64, 100ep, lr=2e-4, tw=0.8
+# Config: NCL10+ACL6, ViT224, vit_blocks [1,2,3,5], rank64, 100ep, lr=2e-4, tw=0.8
 
 SEEDS=(314 999 2024 42 1024)
 GPUS=(0 1 2 3 4)
@@ -26,7 +26,7 @@ for i in "${!SEEDS[@]}"; do
         --lr 2e-4 \
         --lora_rank 64 \
         --num_coupling_layers 10 \
-        --acb_n_blocks 6 \
+        --acl_n_layers 6 \
         --batch_size 16 \
         --use_tsa \
         --use_tail_aware_loss \

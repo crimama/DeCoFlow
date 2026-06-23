@@ -13,7 +13,7 @@ BASE_ARGS="--dataset mvtec \
     --lr 3e-4 \
     --lora_rank 64 \
     --num_coupling_layers 8 \
-    --acb_n_blocks 4 \
+    --acl_n_layers 4 \
     --use_tail_aware_loss \
     --tail_weight 0.7 \
     --tail_top_k_ratio 0.02 \

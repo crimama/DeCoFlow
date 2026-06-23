@@ -43,7 +43,7 @@ def setup_model_and_data(device, task_id=1):
 
     # Model
     ablation = AblationConfig(
-        use_lora=True, use_acb=True, acb_n_blocks=2,
+        use_lora=True, use_acl=True, acl_n_layers=2,
         use_tsa=True,
         scale_context_kernel=5,
     )

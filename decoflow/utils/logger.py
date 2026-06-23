@@ -685,8 +685,8 @@ class TrainingLogger:
                     'score_aggregation_top_k', 'score_aggregation_top_k_percent',
                     'use_tail_aware_loss', 'tail_weight', 'tail_top_k_ratio',
                     'tail_match_eval_topk', 'tail_loss_blend_mode',
-                    # ACB detail needed for post-hoc attribution
-                    'acb_n_blocks', 'acb_subnet_type', 'acb_kernel_size',
+                    # ACL detail needed for post-hoc attribution
+                    'acl_n_layers', 'acl_subnet_type', 'acl_kernel_size',
                     # Related regularization knobs
                     'lambda_logdet', 'focal_gamma', 'score_smooth_sigma',
                 ]

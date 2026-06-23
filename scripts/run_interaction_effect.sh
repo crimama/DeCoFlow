@@ -1,9 +1,9 @@
 #!/bin/bash
 # =============================================================================
-# Interaction Effect Experiment: Proving WA, TAL, ACB are Integral Components
+# Interaction Effect Experiment: Proving WA, TAL, ACL are Integral Components
 # =============================================================================
 #
-# Goal: Show that WA, TAL, ACB are NOT "generic boosters" but rather
+# Goal: Show that WA, TAL, ACL are NOT "generic boosters" but rather
 #       "integral components that compensate for Base Freeze"
 #
 # Hypothesis:
@@ -15,8 +15,8 @@
 #   Group 2: Base Frozen (with LoRA - our approach)
 #
 # Expected Results:
-#   - Trainable: WA/TAL/ACB effect is minimal (Base can self-adapt)
-#   - Frozen: WA/TAL/ACB effect is large (Base cannot adapt, needs compensation)
+#   - Trainable: WA/TAL/ACL effect is minimal (Base can self-adapt)
+#   - Frozen: WA/TAL/ACL effect is large (Base cannot adapt, needs compensation)
 # =============================================================================
 
 set -e
@@ -27,7 +27,7 @@ EPOCHS=60
 LR=3e-4
 BATCH_SIZE=16
 NCL=6  # DCL blocks
-ACB_BLOCKS=2
+ACL_LAYERS=2
 LORA_RANK=64
 DATA_PATH="/Data/MVTecAD"
 LOG_DIR="./logs/InteractionEffect"
@@ -68,7 +68,7 @@ CUDA_VISIBLE_DEVICES=0 python run_decoflow.py ${COMMON_ARGS} \
     --no_freeze_base \
     --no_lora \
     --no_tsa \
-    --no_acb \
+    --no_acl \
     --experiment_name "IE_Trainable_Baseline" \
     > ${LOG_DIR}/trainable_baseline.log 2>&1 &
 PID1=$!
@@ -79,7 +79,7 @@ CUDA_VISIBLE_DEVICES=1 python run_decoflow.py ${COMMON_ARGS} \
     --no_freeze_base \
     --no_lora \
     --use_tsa \
-    --no_acb \
+    --no_acl \
     --experiment_name "IE_Trainable_WA" \
     > ${LOG_DIR}/trainable_wa.log 2>&1 &
 PID2=$!
@@ -90,22 +90,22 @@ CUDA_VISIBLE_DEVICES=4 python run_decoflow.py ${COMMON_ARGS} \
     --no_freeze_base \
     --no_lora \
     --no_tsa \
-    --no_acb \
+    --no_acl \
     ${TAL_ARGS} \
     --experiment_name "IE_Trainable_TAL" \
     > ${LOG_DIR}/trainable_tal.log 2>&1 &
 PID3=$!
 
-# 4. Trainable + ACB: Only ACB added
-echo "[4/8] Starting: Trainable + ACB (GPU 5)"
+# 4. Trainable + ACL: Only ACL added
+echo "[4/8] Starting: Trainable + ACL (GPU 5)"
 CUDA_VISIBLE_DEVICES=5 python run_decoflow.py ${COMMON_ARGS} \
     --no_freeze_base \
     --no_lora \
     --no_tsa \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --experiment_name "IE_Trainable_DIA" \
-    > ${LOG_DIR}/trainable_acb.log 2>&1 &
+    > ${LOG_DIR}/trainable_acl.log 2>&1 &
 PID4=$!
 
 echo "Waiting for Group 1 (Trainable) experiments to complete..."
@@ -121,7 +121,7 @@ echo "Group 1 complete!"
 echo "[5/8] Starting: Frozen Baseline (GPU 0)"
 CUDA_VISIBLE_DEVICES=0 python run_decoflow.py ${COMMON_ARGS} \
     --no_tsa \
-    --no_acb \
+    --no_acl \
     --experiment_name "IE_Frozen_Baseline" \
     > ${LOG_DIR}/frozen_baseline.log 2>&1 &
 PID5=$!
@@ -130,7 +130,7 @@ PID5=$!
 echo "[6/8] Starting: Frozen + WA (GPU 1)"
 CUDA_VISIBLE_DEVICES=1 python run_decoflow.py ${COMMON_ARGS} \
     --use_tsa \
-    --no_acb \
+    --no_acl \
     --experiment_name "IE_Frozen_WA" \
     > ${LOG_DIR}/frozen_wa.log 2>&1 &
 PID6=$!
@@ -139,20 +139,20 @@ PID6=$!
 echo "[7/8] Starting: Frozen + TAL (GPU 4)"
 CUDA_VISIBLE_DEVICES=4 python run_decoflow.py ${COMMON_ARGS} \
     --no_tsa \
-    --no_acb \
+    --no_acl \
     ${TAL_ARGS} \
     --experiment_name "IE_Frozen_TAL" \
     > ${LOG_DIR}/frozen_tal.log 2>&1 &
 PID7=$!
 
-# 8. Frozen + ACB: ACB added
-echo "[8/8] Starting: Frozen + ACB (GPU 5)"
+# 8. Frozen + ACL: ACL added
+echo "[8/8] Starting: Frozen + ACL (GPU 5)"
 CUDA_VISIBLE_DEVICES=5 python run_decoflow.py ${COMMON_ARGS} \
     --no_tsa \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --experiment_name "IE_Frozen_DIA" \
-    > ${LOG_DIR}/frozen_acb.log 2>&1 &
+    > ${LOG_DIR}/frozen_acl.log 2>&1 &
 PID8=$!
 
 echo "Waiting for Group 2 (Frozen) experiments to complete..."

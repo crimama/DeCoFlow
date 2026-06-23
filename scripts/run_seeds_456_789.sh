@@ -2,7 +2,7 @@
 # =============================================================================
 # Multi-Seed Experiments (Seeds 456, 789) - MAIN Configuration
 # =============================================================================
-# DCL6 + ACB2 configuration (matching current MAIN)
+# DCL6 + ACL2 configuration (matching current MAIN)
 # =============================================================================
 
 set -e
@@ -12,7 +12,7 @@ EPOCHS=60
 LR=3e-4
 BATCH_SIZE=16
 NCL=6  # DCL blocks
-ACB_BLOCKS=2
+ACL_LAYERS=2
 LORA_RANK=64
 DATA_PATH="/Data/MVTecAD"
 LOG_DIR="./logs/Final"
@@ -26,8 +26,8 @@ COMMON_ARGS="--task_classes ${CLASSES} \
     --data_path ${DATA_PATH} \
     --log_dir ${LOG_DIR} \
     --use_tsa \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --use_tail_aware_loss \
     --tail_weight 0.7 \
     --tail_top_k_ratio 0.02 \
@@ -37,7 +37,7 @@ COMMON_ARGS="--task_classes ${CLASSES} \
     --scale_context_kernel 5"
 
 echo "=============================================="
-echo "Multi-Seed Experiments (MAIN Config: DCL6+ACB2)"
+echo "Multi-Seed Experiments (MAIN Config: DCL6+ACL2)"
 echo "=============================================="
 echo "Seeds: 456, 789"
 echo "GPUs: 0, 1"

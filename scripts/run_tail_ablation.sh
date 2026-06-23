@@ -9,7 +9,7 @@
 LOG_DIR="/Volume/DeCoFlow/logs/Ablation/TailCombination"
 mkdir -p $LOG_DIR
 
-# Base command (DCL6+ACB2 configuration)
+# Base command (DCL6+ACL2 configuration)
 BASE_CMD="python run_decoflow.py \
     --dataset mvtec \
     --data_path /Data/MVTecAD \
@@ -19,7 +19,7 @@ BASE_CMD="python run_decoflow.py \
     --lr 3e-4 \
     --lora_rank 64 \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --batch_size 16 \
     --use_tsa \
     --use_tail_aware_loss \

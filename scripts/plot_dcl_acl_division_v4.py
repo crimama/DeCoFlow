@@ -86,7 +86,7 @@ ax.annotate(f"+{100 - cum_pct[6]:.1f}%",
 # Region labels
 ax.text(3.0, 4, "DCL (6 blocks)", ha="center", fontsize=11, color=DCL_BLUE,
         fontstyle="italic", fontweight="bold")
-ax.text(7.5, 4, "ACL\n(2 blocks)", ha="center", fontsize=10, color=ACL_RED,
+ax.text(7.5, 4, "ACL\n(2 layers)", ha="center", fontsize=10, color=ACL_RED,
         fontstyle="italic", fontweight="bold")
 
 # --- Role label boxes (non-overlapping, below annotations) ---

@@ -49,7 +49,7 @@ def parse_config(config_path: str) -> Optional[Dict]:
             'lr': config.get('lr', 'N/A'),
             'lora_rank': config.get('lora_rank', 'N/A'),
             'num_coupling_layers': config.get('num_coupling_layers', 'N/A'),
-            'acb_n_blocks': config.get('acb_n_blocks', 'N/A'),
+            'acl_n_layers': config.get('acl_n_layers', 'N/A'),
             'tail_weight': config.get('tail_weight', 'N/A'),
             'lambda_logdet': config.get('lambda_logdet', 'N/A'),
             'num_tasks': len(config.get('task_classes', [])),
@@ -96,7 +96,7 @@ def generate_summary_for_directory(base_dir: str, output_path: str):
                 'lr': 'N/A',
                 'lora_rank': 'N/A',
                 'num_coupling_layers': 'N/A',
-                'acb_n_blocks': 'N/A',
+                'acl_n_layers': 'N/A',
                 'tail_weight': 'N/A',
                 'lambda_logdet': 'N/A',
                 'num_tasks': 'N/A'
@@ -109,7 +109,7 @@ def generate_summary_for_directory(base_dir: str, output_path: str):
         fieldnames = [
             'experiment_name', 'image_auc', 'pixel_auc', 'pixel_ap', 'routing_acc',
             'backbone', 'num_epochs', 'lr', 'lora_rank', 'num_coupling_layers',
-            'acb_n_blocks', 'tail_weight', 'lambda_logdet', 'num_tasks'
+            'acl_n_layers', 'tail_weight', 'lambda_logdet', 'num_tasks'
         ]
 
         with open(output_path, 'w', newline='') as f:

@@ -31,7 +31,7 @@ ckpt_dir = '/Volume/DeCoFlow/logs/V48_01_H04_highres_clean/checkpoints/task_14'
 state_dict = torch.load(f'{ckpt_dir}/nf_model.pth', map_location='cpu', weights_only=False)
 
 nf_base_params = 0
-per_task_params = defaultdict(lambda: {'lora': 0, 'acb': 0, 'bias': 0, 'tsa': 0, 'other': 0})
+per_task_params = defaultdict(lambda: {'lora': 0, 'acl': 0, 'bias': 0, 'tsa': 0, 'other': 0})
 
 for key, val in state_dict.items():
     n = val.numel()
@@ -42,7 +42,7 @@ for key, val in state_dict.items():
                 tid = parts[i + 1]
                 per_task_params[tid]['lora'] += n
                 break
-    elif 'acb_blocks' in key or 'dia_' in key:
+    elif 'acl_layers' in key or 'dia_' in key:
         parts = key.split('.')
         tid = None
         for i, p in enumerate(parts):
@@ -50,7 +50,7 @@ for key, val in state_dict.items():
                 tid = parts[i + 1]
                 break
         if tid is not None and tid.isdigit():
-            per_task_params[tid]['acb'] += n
+            per_task_params[tid]['acl'] += n
         else:
             nf_base_params += n
     elif 'task_bias' in key:

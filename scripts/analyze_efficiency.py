@@ -109,7 +109,7 @@ def profile_memory(data_path: str = '/Volume/MVTecAD') -> dict:
     Measure peak GPU memory for each component of DeCoFlow.
 
     Uses V48_01 configuration:
-        backbone: wide_resnet50_2, embed_dim: 768, NCL: 6, ACB: 2,
+        backbone: wide_resnet50_2, embed_dim: 768, NCL: 6, ACL: 2,
         rank: 64, batch_size: 16, use_high_res: True, img_size: 224
 
     Returns:
@@ -136,7 +136,7 @@ def profile_memory(data_path: str = '/Volume/MVTecAD') -> dict:
     backbone_name = 'wide_resnet50_2'
     embed_dim = 768
     num_coupling_layers = 6
-    acb_n_blocks = 2
+    acl_n_layers = 2
     lora_rank = 64
     batch_size = 16
     img_size = 224
@@ -149,8 +149,8 @@ def profile_memory(data_path: str = '/Volume/MVTecAD') -> dict:
         use_task_adapter=True,
         use_pos_embedding=True,
         use_tsa=True,
-        use_acb=True,
-        acb_n_blocks=acb_n_blocks,
+        use_acl=True,
+        acl_n_layers=acl_n_layers,
         use_spatial_context=True,
         use_scale_context=True,
         scale_context_kernel=5,
@@ -281,7 +281,7 @@ def profile_memory(data_path: str = '/Volume/MVTecAD') -> dict:
     nf_model.set_active_task(1)
     nf_model.train()
 
-    # Rebuild optimizer with only trainable params (LoRA + adapter + ACB for task 1)
+    # Rebuild optimizer with only trainable params (LoRA + adapter + ACL for task 1)
     optimizer_task1 = torch.optim.Adam(
         [p for p in nf_model.parameters() if p.requires_grad],
         lr=lr

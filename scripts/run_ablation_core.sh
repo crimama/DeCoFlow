@@ -19,7 +19,7 @@ EPOCHS=60
 LR="3e-4"
 LORA_RANK=64
 COUPLING_LAYERS=8
-ACB_BLOCKS=4
+ACL_LAYERS=4
 BATCH_SIZE=16
 LOG_DIR="./logs/Ablation-Core"
 
@@ -50,8 +50,8 @@ echo "[GPU 0] Launching experiments 1 and 5..."
         --lora_rank ${LORA_RANK} \
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
-        --use_acb \
-        --acb_n_blocks ${ACB_BLOCKS} \
+        --use_acl \
+        --acl_n_layers ${ACL_LAYERS} \
         --use_tsa \
         --use_tail_aware_loss \
         --tail_weight 0.7 \
@@ -74,8 +74,8 @@ echo "[GPU 0] Launching experiments 1 and 5..."
         --lora_rank ${LORA_RANK} \
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
-        --use_acb \
-        --acb_n_blocks ${ACB_BLOCKS} \
+        --use_acl \
+        --acl_n_layers ${ACL_LAYERS} \
         --use_tsa \
         --use_tail_aware_loss \
         --tail_weight 0.7 \
@@ -105,8 +105,8 @@ echo "[GPU 1] Launching experiments 2 and 6..."
         --lora_rank ${LORA_RANK} \
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
-        --use_acb \
-        --acb_n_blocks ${ACB_BLOCKS} \
+        --use_acl \
+        --acl_n_layers ${ACL_LAYERS} \
         --no_tsa \
         --use_tail_aware_loss \
         --tail_weight 0.7 \
@@ -128,8 +128,8 @@ echo "[GPU 1] Launching experiments 2 and 6..."
         --lora_rank ${LORA_RANK} \
         --num_coupling_layers ${COUPLING_LAYERS} \
         --batch_size ${BATCH_SIZE} \
-        --use_acb \
-        --acb_n_blocks ${ACB_BLOCKS} \
+        --use_acl \
+        --acl_n_layers ${ACL_LAYERS} \
         --use_tsa \
         --use_tail_aware_loss \
         --tail_weight 0.7 \
@@ -157,8 +157,8 @@ CUDA_VISIBLE_DEVICES=4 python run_decoflow.py \
     --lora_rank ${LORA_RANK} \
     --num_coupling_layers ${COUPLING_LAYERS} \
     --batch_size ${BATCH_SIZE} \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --use_tsa \
     --score_aggregation_mode top_k \
     --score_aggregation_top_k 3 \
@@ -183,8 +183,8 @@ CUDA_VISIBLE_DEVICES=5 python run_decoflow.py \
     --lora_rank ${LORA_RANK} \
     --num_coupling_layers ${COUPLING_LAYERS} \
     --batch_size ${BATCH_SIZE} \
-    --use_acb \
-    --acb_n_blocks ${ACB_BLOCKS} \
+    --use_acl \
+    --acl_n_layers ${ACL_LAYERS} \
     --use_tsa \
     --use_tail_aware_loss \
     --tail_weight 0.7 \
@@ -223,7 +223,7 @@ echo "  1. w/o SpatialContextMixer (GPU 0, first)"
 echo "  2. w/o TaskSpecificAlignment (GPU 1, first)"
 echo "  3. w/o Tail Aware Loss (GPU 4)"
 echo "  4. w/o LogDet Regularization (GPU 5)"
-echo "  5. w/o DCL subnet / ACB only (GPU 0, second)"
+echo "  5. w/o DCL subnet / ACL only (GPU 0, second)"
 echo "  6. w/o Scale Context (GPU 1, second)"
 echo ""
 echo "Estimated time: ~4 hours per experiment"

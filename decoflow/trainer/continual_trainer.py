@@ -184,9 +184,9 @@ class DeCoFlowContinualTrainer:
             self.use_pos_embedding = ablation_config.use_pos_embedding
             self.use_mahalanobis = ablation_config.use_mahalanobis
             self.lambda_logdet = ablation_config.lambda_logdet
-            # V45: ACB gating and regularization
-            self.acb_gate_l1_lambda = getattr(ablation_config, 'acb_gate_l1_lambda', 0.0)
-            self.acb_weight_decay = getattr(ablation_config, 'acb_weight_decay', 0.0)
+            # V45: ACL gating and regularization
+            self.acl_gate_l1_lambda = getattr(ablation_config, 'acl_gate_l1_lambda', 0.0)
+            self.acl_weight_decay = getattr(ablation_config, 'acl_weight_decay', 0.0)
             self.spatial_var_lambda = getattr(ablation_config, 'spatial_var_lambda', 0.0)
             # V3: OGP settings
             self.use_ogp = ablation_config.use_ogp
@@ -596,7 +596,7 @@ class DeCoFlowContinualTrainer:
 
         Class-Level Mode (use_class_level_adapters=True):
             Each class within the task is trained separately with its own
-            LoRA, ACB, InputAdapter, and Prototype.
+            LoRA, ACL, InputAdapter, and Prototype.
 
         Args:
             task_id: Task identifier
@@ -638,7 +638,7 @@ class DeCoFlowContinualTrainer:
         # =================================================================
         # Standard Task-Level Training Mode
         # =================================================================
-        # Add task to NF model (pass class_name for per-class ACB support)
+        # Add task to NF model (pass class_name for per-class ACL support)
         cls_name = task_classes[0] if len(task_classes) == 1 else None
         self.nf_model.add_task(task_id, class_name=cls_name)
 
@@ -1084,12 +1084,12 @@ class DeCoFlowContinualTrainer:
             total_loss = nll_loss
             logdet_reg = None
 
-        if self.spatial_var_lambda > 0 and self.nf_model._acb_spatial_var_loss is not None:
-            total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acb_spatial_var_loss
-        if self.acb_gate_l1_lambda > 0:
-            gate_l1 = self.nf_model.get_acb_gate_l1_loss()
+        if self.spatial_var_lambda > 0 and self.nf_model._acl_spatial_var_loss is not None:
+            total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acl_spatial_var_loss
+        if self.acl_gate_l1_lambda > 0:
+            gate_l1 = self.nf_model.get_acl_gate_l1_loss()
             if gate_l1 is not None:
-                total_loss = total_loss + self.acb_gate_l1_lambda * gate_l1
+                total_loss = total_loss + self.acl_gate_l1_lambda * gate_l1
         if self.use_stn and self.stn is not None:
             stn_reg = self.stn.get_rotation_regularization_loss()
             if stn_reg.device != total_loss.device:
@@ -1151,14 +1151,14 @@ class DeCoFlowContinualTrainer:
             all_params.extend(self.stn.parameters())
 
         # Create optimizer (AdamP if available, AdamW fallback)
-        # V45: Separate ACB params for custom weight decay if needed
+        # V45: Separate ACL params for custom weight decay if needed
         task_key = str(task_id)
-        if self.acb_weight_decay > 0 and task_key in self.nf_model.acb_adapters:
-            acb_params = list(self.nf_model.acb_adapters[task_key].parameters())
-            acb_ids = {id(p) for p in acb_params}
-            other_params = [p for p in all_params if id(p) not in acb_ids]
+        if self.acl_weight_decay > 0 and task_key in self.nf_model.acl_adapters:
+            acl_params = list(self.nf_model.acl_adapters[task_key].parameters())
+            acl_ids = {id(p) for p in acl_params}
+            other_params = [p for p in all_params if id(p) not in acl_ids]
             optimizer = create_optimizer(
-                [{'params': other_params}, {'params': acb_params, 'weight_decay': self.acb_weight_decay}],
+                [{'params': other_params}, {'params': acl_params, 'weight_decay': self.acl_weight_decay}],
                 lr=lr
             )
         else:
@@ -1241,13 +1241,13 @@ class DeCoFlowContinualTrainer:
                     logdet_reg = None
 
                 # V45: Spatial variance preservation loss
-                if self.spatial_var_lambda > 0 and self.nf_model._acb_spatial_var_loss is not None:
-                    total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acb_spatial_var_loss
-                # V45: ACB gate L1 regularization
-                if self.acb_gate_l1_lambda > 0:
-                    gate_l1 = self.nf_model.get_acb_gate_l1_loss()
+                if self.spatial_var_lambda > 0 and self.nf_model._acl_spatial_var_loss is not None:
+                    total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acl_spatial_var_loss
+                # V45: ACL gate L1 regularization
+                if self.acl_gate_l1_lambda > 0:
+                    gate_l1 = self.nf_model.get_acl_gate_l1_loss()
                     if gate_l1 is not None:
-                        total_loss = total_loss + self.acb_gate_l1_lambda * gate_l1
+                        total_loss = total_loss + self.acl_gate_l1_lambda * gate_l1
 
                 # V6.1: Add STN rotation regularization to prevent extreme rotations
                 stn_reg = None
@@ -1354,14 +1354,14 @@ class DeCoFlowContinualTrainer:
             all_fast_params.extend(base_params)
 
         # Create optimizer (AdamP if available, AdamW fallback)
-        # V45: Separate ACB params for custom weight decay if needed
+        # V45: Separate ACL params for custom weight decay if needed
         task_key = str(task_id)
-        if self.acb_weight_decay > 0 and task_key in self.nf_model.acb_adapters:
-            acb_params = list(self.nf_model.acb_adapters[task_key].parameters())
-            acb_ids = {id(p) for p in acb_params}
-            other_fast = [p for p in all_fast_params if id(p) not in acb_ids]
+        if self.acl_weight_decay > 0 and task_key in self.nf_model.acl_adapters:
+            acl_params = list(self.nf_model.acl_adapters[task_key].parameters())
+            acl_ids = {id(p) for p in acl_params}
+            other_fast = [p for p in all_fast_params if id(p) not in acl_ids]
             optimizer = create_optimizer(
-                [{'params': other_fast}, {'params': acb_params, 'weight_decay': self.acb_weight_decay}],
+                [{'params': other_fast}, {'params': acl_params, 'weight_decay': self.acl_weight_decay}],
                 lr=lr
             )
         else:
@@ -1446,13 +1446,13 @@ class DeCoFlowContinualTrainer:
                     logdet_reg = None
 
                 # V45: Spatial variance preservation loss
-                if self.spatial_var_lambda > 0 and self.nf_model._acb_spatial_var_loss is not None:
-                    total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acb_spatial_var_loss
-                # V45: ACB gate L1 regularization
-                if self.acb_gate_l1_lambda > 0:
-                    gate_l1 = self.nf_model.get_acb_gate_l1_loss()
+                if self.spatial_var_lambda > 0 and self.nf_model._acl_spatial_var_loss is not None:
+                    total_loss = total_loss + self.spatial_var_lambda * self.nf_model._acl_spatial_var_loss
+                # V45: ACL gate L1 regularization
+                if self.acl_gate_l1_lambda > 0:
+                    gate_l1 = self.nf_model.get_acl_gate_l1_loss()
                     if gate_l1 is not None:
-                        total_loss = total_loss + self.acb_gate_l1_lambda * gate_l1
+                        total_loss = total_loss + self.acl_gate_l1_lambda * gate_l1
 
                 # V6.1: Add STN rotation regularization to prevent extreme rotations
                 stn_reg = None

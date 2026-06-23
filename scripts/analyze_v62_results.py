@@ -17,7 +17,7 @@ from collections import defaultdict
 # Experiment configurations
 # =====================================================================
 EXPERIMENTS = {
-    "V62_01_FullSNL_8acb_hr05": {
+    "V62_01_FullSNL_8acl_hr05": {
         "label": "Full SNL (hr=0.5)",
         "short": "Full SNL",
         "dcl": 0, "snl": 8,
@@ -31,7 +31,7 @@ EXPERIMENTS = {
         "adapter": "Full-rank",
         "per_task_params_M": 10.64,
     },
-    "V62_03_FullSNL_8acb_hr20": {
+    "V62_03_FullSNL_8acl_hr20": {
         "label": "Full SNL (hr=2.0)",
         "short": "Full SNL (wide)",
         "dcl": 0, "snl": 8,
@@ -67,7 +67,7 @@ REFERENCE = {
         "short": "w/o SNL",
         "dcl": 6, "snl": 0,
         "adapter": "LoRA (r=64)",
-        "per_task_params_M": 1.94,  # 3.71 - 1.77(ACB)
+        "per_task_params_M": 1.94,  # 3.71 - 1.77(ACL)
         "iauc": 88.30,
         "pap": 45.76,
         "fm": 0.0,
@@ -342,8 +342,8 @@ def main():
     order = [
         "V48_01_DeCoFlow",         # Ours (reference)
         "V52_01_wo_SNL",           # w/o SNL (reference)
-        "V62_01_FullSNL_8acb_hr05",
-        "V62_03_FullSNL_8acb_hr20",
+        "V62_01_FullSNL_8acl_hr05",
+        "V62_03_FullSNL_8acl_hr20",
         "V62_02_DecompLinear_regularlinear",
         "V62_04_DecompLoRA_rank512",
     ]
@@ -429,7 +429,7 @@ def main():
     ours = all_results.get("V48_01_DeCoFlow", {})
     wo_snl = all_results.get("V52_01_wo_SNL", {})
 
-    for key in ["V62_01_FullSNL_8acb_hr05", "V62_03_FullSNL_8acb_hr20",
+    for key in ["V62_01_FullSNL_8acl_hr05", "V62_03_FullSNL_8acl_hr20",
                 "V62_02_DecompLinear_regularlinear", "V62_04_DecompLoRA_rank512"]:
         if key not in all_results:
             continue

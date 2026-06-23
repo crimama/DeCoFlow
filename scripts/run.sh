@@ -3,12 +3,12 @@
 # =============================================================================
 # DeCoFlow: Default Training Script (MAIN Configuration)
 # =============================================================================
-# Configuration: DCL6 + ACB2 (Total 8 blocks)
+# Configuration: DCL6 + ACL2 (Total 8 blocks)
 # Expected Performance: Img AUC 98.05%, Pix AUC 97.81%, Pix AP 55.80%
 # =============================================================================
 
 echo "============================================================="
-echo "DeCoFlow: MAIN Configuration (DCL6 + ACB2)"
+echo "DeCoFlow: MAIN Configuration (DCL6 + ACL2)"
 echo "============================================================="
 echo "Timestamp: $(date)"
 echo "============================================================="
@@ -17,7 +17,7 @@ echo "============================================================="
 GPU=${GPU:-0}
 
 # Experiment name (can be overridden with EXP_NAME=xxx ./run.sh)
-EXP_NAME=${EXP_NAME:-"MVTec-DCL6-ACB2"}
+EXP_NAME=${EXP_NAME:-"MVTec-DCL6-ACL2"}
 
 CUDA_VISIBLE_DEVICES=$GPU python run_decoflow.py \
     --dataset mvtec \
@@ -28,7 +28,7 @@ CUDA_VISIBLE_DEVICES=$GPU python run_decoflow.py \
     --lr 3e-4 \
     --lora_rank 64 \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --batch_size 16 \
     --use_tsa \
     --use_tail_aware_loss \

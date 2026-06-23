@@ -226,7 +226,7 @@ def create_model(config: dict, device: str) -> Tuple[nn.Module, nn.Module]:
     ablation_config = AblationConfig(
         use_lora=False,  # No LoRA for baselines
         use_tsa=False,
-        use_acb=False,
+        use_acl=False,
     )
 
     # Create NF model (without LoRA - plain shared weights)

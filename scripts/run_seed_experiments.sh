@@ -1,7 +1,7 @@
 #!/bin/bash
 # V60: Seed Experiments for MVTec SOTA (V48_01 H04+HR config)
 # 7 seeds × 7 GPUs (0,1,2,3,4,6,7) — GPU 5 excluded
-# Base config: NCL6+ACB2, rank64, WRN50, high_res, 60ep, lr=3e-4, tw=0.85
+# Base config: NCL6+ACL2, rank64, WRN50, high_res, 60ep, lr=3e-4, tw=0.85
 
 SEEDS=(42 123 256 512 1024 2024 7777)
 GPUS=(0 1 2 3 4 6 7)
@@ -23,7 +23,7 @@ for i in "${!SEEDS[@]}"; do
         --lr 3e-4 \
         --lora_rank 64 \
         --num_coupling_layers 6 \
-        --acb_n_blocks 2 \
+        --acl_n_layers 2 \
         --batch_size 16 \
         --use_tsa \
         --use_tail_aware_loss \

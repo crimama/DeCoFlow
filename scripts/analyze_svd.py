@@ -91,7 +91,7 @@ def main():
     # === Step 1: Create fresh model and save initial weights ===
     print("")
     print("--- Step 1: Capturing initial weights ---")
-    ablation_no_lora = AblationConfig(use_lora=False, use_tsa=False, use_acb=False, scale_context_kernel=cfg.get("ablation", {}).get("scale_context_kernel", 5))
+    ablation_no_lora = AblationConfig(use_lora=False, use_tsa=False, use_acl=False, scale_context_kernel=cfg.get("ablation", {}).get("scale_context_kernel", 5))
     model_init = DeCoFlowNF(embed_dim=embed_dim, coupling_layers=ncl, clamp_alpha=1.9,
         lora_rank=lora_rank, lora_alpha=1.0, device=device, ablation_config=ablation_no_lora)
     w_init = extract_subnet_weights(model_init)

@@ -10,7 +10,7 @@ BASE_CONFIG="--dataset mvtec \
     --lr 3e-4 \
     --lora_rank 64 \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --batch_size 16 \
     --use_tsa \
     --use_tail_aware_loss \

@@ -78,7 +78,7 @@ def count_lora_parameters_per_task(nf_model: DeCoFlowNF, task_id: int) -> Dict[s
     lora_params = 0
     task_bias_params = 0
     task_adapter_params = 0
-    acb_params = 0
+    acl_params = 0
 
     # Detailed LoRA breakdown
     lora_a_params = 0
@@ -102,9 +102,9 @@ def count_lora_parameters_per_task(nf_model: DeCoFlowNF, task_id: int) -> Dict[s
     if task_key in nf_model.input_adapters:
         task_adapter_params = count_parameters(nf_model.input_adapters[task_key])
 
-    # Count ACB parameters for this task
-    if hasattr(nf_model, 'acb_adapters') and task_key in nf_model.acb_adapters:
-        acb_params = count_parameters(nf_model.acb_adapters[task_key])
+    # Count ACL parameters for this task
+    if hasattr(nf_model, 'acl_adapters') and task_key in nf_model.acl_adapters:
+        acl_params = count_parameters(nf_model.acl_adapters[task_key])
 
     return {
         'lora_params': lora_params,
@@ -113,9 +113,9 @@ def count_lora_parameters_per_task(nf_model: DeCoFlowNF, task_id: int) -> Dict[s
         'num_lora_layers': num_lora_layers,
         'task_bias_params': task_bias_params,
         'task_adapter_params': task_adapter_params,
-        'acb_params': acb_params,
-        'total_per_task': lora_params + task_bias_params + task_adapter_params + acb_params,
-        'total_excl_acb': lora_params + task_bias_params + task_adapter_params,
+        'acl_params': acl_params,
+        'total_per_task': lora_params + task_bias_params + task_adapter_params + acl_params,
+        'total_excl_acl': lora_params + task_bias_params + task_adapter_params,
     }
 
 
@@ -146,9 +146,9 @@ def count_base_parameters(nf_model: DeCoFlowNF) -> Dict[str, int]:
     if hasattr(nf_model, 'task_specific_alignment') and nf_model.task_specific_alignment is not None:
         base_params += count_parameters(nf_model.task_specific_alignment)
 
-    # ACB blocks
-    if hasattr(nf_model, 'acb_blocks') and nf_model.acb_blocks is not None:
-        base_params += count_parameters(nf_model.acb_blocks)
+    # ACL layers
+    if hasattr(nf_model, 'acl_layers') and nf_model.acl_layers is not None:
+        base_params += count_parameters(nf_model.acl_layers)
 
     return {
         'base_params': base_params
@@ -242,7 +242,7 @@ def main():
                         help='Backbone model name')
     parser.add_argument('--img_size', type=int, default=224, help='Input image size')
     parser.add_argument('--num_coupling_layers', type=int, default=6, help='Number of coupling layers')
-    parser.add_argument('--acb_n_blocks', type=int, default=2, help='Number of ACB blocks')
+    parser.add_argument('--acl_n_layers', type=int, default=2, help='Number of ACL layers')
     parser.add_argument('--lora_rank', type=int, default=64, help='LoRA rank')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size')
     parser.add_argument('--data_path', type=str, default='/Data/MVTecAD', help='Dataset path')
@@ -278,8 +278,8 @@ def main():
         use_task_adapter=True,
         use_pos_embedding=True,
         use_tsa=True,
-        use_acb=True,
-        acb_n_blocks=args.acb_n_blocks,
+        use_acl=True,
+        acl_n_layers=args.acl_n_layers,
         use_spatial_context=True,
         use_scale_context=True,
     )
@@ -362,7 +362,7 @@ def main():
             'backbone': args.backbone_name,
             'img_size': args.img_size,
             'num_coupling_layers': args.num_coupling_layers,
-            'acb_n_blocks': args.acb_n_blocks,
+            'acl_n_layers': args.acl_n_layers,
             'lora_rank': args.lora_rank,
             'batch_size': args.batch_size,
             'num_epochs': args.num_epochs,
@@ -438,10 +438,10 @@ def main():
         print(f"    LoRA total: {task_params['lora_params']:,} ({task_params['num_lora_layers']} layers)")
         print(f"    Task bias params: {task_params['task_bias_params']:,}")
         print(f"    TSA Adapter params: {task_params['task_adapter_params']:,}")
-        print(f"    ACB params: {task_params['acb_params']:,}")
+        print(f"    ACL params: {task_params['acl_params']:,}")
         print(f"    ---")
-        print(f"    Total (excl. ACB): {task_params['total_excl_acb']:,}")
-        print(f"    Total (incl. ACB): {task_params['total_per_task']:,}")
+        print(f"    Total (excl. ACL): {task_params['total_excl_acl']:,}")
+        print(f"    Total (incl. ACL): {task_params['total_per_task']:,}")
         print(f"    Training time: {training_time:.2f}s ({training_time/60:.2f}min)")
         print(f"    Peak GPU memory: {mem_after_task['max_allocated_mb']:.1f} MB")
 
@@ -453,8 +453,8 @@ def main():
             'num_lora_layers': task_params['num_lora_layers'],
             'task_bias_params': task_params['task_bias_params'],
             'task_adapter_params': task_params['task_adapter_params'],
-            'acb_params': task_params['acb_params'],
-            'total_excl_acb': task_params['total_excl_acb'],
+            'acl_params': task_params['acl_params'],
+            'total_excl_acl': task_params['total_excl_acl'],
             'total_per_task': task_params['total_per_task'],
             'training_time_sec': training_time,
             'peak_memory_mb': mem_after_task['max_allocated_mb'],
@@ -507,15 +507,15 @@ def main():
         avg_lora = sum(tp['lora_params'] for tp in task_param_details[1:]) / len(task_param_details[1:])
         avg_bias = sum(tp['task_bias_params'] for tp in task_param_details[1:]) / len(task_param_details[1:])
         avg_wa = sum(tp['task_adapter_params'] for tp in task_param_details[1:]) / len(task_param_details[1:])
-        avg_acb = sum(tp['acb_params'] for tp in task_param_details[1:]) / len(task_param_details[1:])
-        avg_excl_acb = sum(tp['total_excl_acb'] for tp in task_param_details[1:]) / len(task_param_details[1:])
+        avg_acl = sum(tp['acl_params'] for tp in task_param_details[1:]) / len(task_param_details[1:])
+        avg_excl_acl = sum(tp['total_excl_acl'] for tp in task_param_details[1:]) / len(task_param_details[1:])
         avg_per_task_params = sum(tp['total_per_task'] for tp in task_param_details[1:]) / len(task_param_details[1:])
     else:
         avg_lora = task_param_details[0]['lora_params']
         avg_bias = task_param_details[0]['task_bias_params']
         avg_wa = task_param_details[0]['task_adapter_params']
-        avg_acb = task_param_details[0]['acb_params']
-        avg_excl_acb = task_param_details[0]['total_excl_acb']
+        avg_acl = task_param_details[0]['acl_params']
+        avg_excl_acl = task_param_details[0]['total_excl_acl']
         avg_per_task_params = task_param_details[0]['total_per_task']
 
     total_params = total_nf_params
@@ -523,7 +523,7 @@ def main():
         total_params += task_param_details[task_id]['total_per_task']
 
     param_ratio = (avg_per_task_params / base_params['base_params']) * 100 if base_params['base_params'] > 0 else 0
-    param_ratio_excl_acb = (avg_excl_acb / base_params['base_params']) * 100 if base_params['base_params'] > 0 else 0
+    param_ratio_excl_acl = (avg_excl_acl / base_params['base_params']) * 100 if base_params['base_params'] > 0 else 0
 
     print(f"\nParameter Efficiency:")
     print(f"  Backbone (frozen): {backbone_params:,}")
@@ -532,10 +532,10 @@ def main():
     print(f"    LoRA: {int(avg_lora):,}")
     print(f"    TaskBias: {int(avg_bias):,}")
     print(f"    TaskSpecificAlignment: {int(avg_wa):,}")
-    print(f"    ACB: {int(avg_acb):,}")
+    print(f"    ACL: {int(avg_acl):,}")
     print(f"    ---")
-    print(f"    Total (excl. ACB): {int(avg_excl_acb):,} ({param_ratio_excl_acb:.2f}% of NF base)")
-    print(f"    Total (incl. ACB): {int(avg_per_task_params):,} ({param_ratio:.2f}% of NF base)")
+    print(f"    Total (excl. ACL): {int(avg_excl_acl):,} ({param_ratio_excl_acl:.2f}% of NF base)")
+    print(f"    Total (incl. ACL): {int(avg_per_task_params):,} ({param_ratio:.2f}% of NF base)")
     print(f"\n  Total after {len(args.task_classes)} tasks: {total_params:,}")
 
     print(f"\nMemory Efficiency:")
@@ -554,12 +554,12 @@ def main():
             'lora': int(avg_lora),
             'task_bias': int(avg_bias),
             'task_specific_alignment': int(avg_wa),
-            'acb': int(avg_acb),
+            'acl': int(avg_acl),
         },
         'avg_per_task_params': int(avg_per_task_params),
-        'avg_per_task_excl_acb': int(avg_excl_acb),
+        'avg_per_task_excl_acl': int(avg_excl_acl),
         'per_task_ratio_percent': param_ratio,
-        'per_task_ratio_excl_acb_percent': param_ratio_excl_acb,
+        'per_task_ratio_excl_acl_percent': param_ratio_excl_acl,
         'total_params_after_all_tasks': total_params,
         'final_memory_mb': final_mem['allocated_mb'],
         'peak_memory_mb': final_mem['max_allocated_mb'],

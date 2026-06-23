@@ -3,7 +3,7 @@
 # =============================================================================
 # DeCoFlow: TBD Hyperparameter Ablation Study
 # =============================================================================
-# Base: DCL6+ACB2 (MAIN Configuration)
+# Base: DCL6+ACL2 (MAIN Configuration)
 # Each experiment changes ONLY ONE hyperparameter from the default
 # =============================================================================
 
@@ -21,7 +21,7 @@ mkdir -p $LOG_DIR
 # =============================================================================
 # backbone_name = wide_resnet50_2
 # num_coupling_layers = 6
-# acb_n_blocks = 2
+# acl_n_layers = 2
 # lora_rank = 64
 # lr = 3e-4
 # num_epochs = 60
@@ -40,7 +40,7 @@ BASE_CMD="python run_decoflow.py \
     --backbone_name wide_resnet50_2 \
     --num_epochs 60 --lr 3e-4 \
     --lora_rank 64 \
-    --num_coupling_layers 6 --acb_n_blocks 2 \
+    --num_coupling_layers 6 --acl_n_layers 2 \
     --batch_size 16 \
     --use_tsa \
     --log_dir $LOG_DIR"
@@ -218,7 +218,7 @@ run_gpu5() {
 print_summary() {
     echo ""
     echo "============================================================="
-    echo "TBD Hyperparameter Ablation Study (DCL6+ACB2 Base)"
+    echo "TBD Hyperparameter Ablation Study (DCL6+ACL2 Base)"
     echo "============================================================="
     echo "GPU 0 (5 experiments):"
     echo "  - CompleteSeparated"

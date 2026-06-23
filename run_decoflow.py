@@ -351,9 +351,9 @@ def main():
             'tail_top_k_ratio': ablation_config.tail_top_k_ratio,
             'tail_match_eval_topk': getattr(ablation_config, 'tail_match_eval_topk', False),
             'tail_loss_blend_mode': getattr(ablation_config, 'tail_loss_blend_mode', 'mixed'),
-            # V46 ACB subnet details
-            'acb_subnet_type': getattr(ablation_config, 'acb_subnet_type', 'fc'),
-            'acb_kernel_size': getattr(ablation_config, 'acb_kernel_size', 3),
+            # V46 ACL subnet details
+            'acl_subnet_type': getattr(ablation_config, 'acl_subnet_type', 'fc'),
+            'acl_kernel_size': getattr(ablation_config, 'acl_kernel_size', 3),
             # Subnet/activation details
             'activation_fn': getattr(ablation_config, 'activation_fn', 'relu'),
             'use_layernorm': getattr(ablation_config, 'use_layernorm', False),
@@ -361,8 +361,8 @@ def main():
             # V3 Options
             'use_tsa': ablation_config.use_tsa,
             'use_ms_context': ablation_config.use_ms_context,
-            'use_acb': ablation_config.use_acb,
-            'acb_n_blocks': ablation_config.acb_n_blocks,
+            'use_acl': ablation_config.use_acl,
+            'acl_n_layers': ablation_config.acl_n_layers,
             'subnet_depth': ablation_config.subnet_depth,
             'use_nonlinear_lora': ablation_config.use_nonlinear_lora,
             'nonlinear_lora_alpha': ablation_config.nonlinear_lora_alpha,
@@ -375,12 +375,12 @@ def main():
             'use_ewc': ablation_config.use_ewc,
             'use_hybrid_routing': ablation_config.use_hybrid_routing,
             'use_regional_prototype': ablation_config.use_regional_prototype,
-            # V45: ACB gating and regularization
-            'per_class_acb_blocks': ablation_config.per_class_acb_blocks,
-            'acb_gate': ablation_config.acb_gate,
-            'acb_gate_init': ablation_config.acb_gate_init,
-            'acb_gate_l1_lambda': ablation_config.acb_gate_l1_lambda,
-            'acb_weight_decay': ablation_config.acb_weight_decay,
+            # V45: ACL gating and regularization
+            'per_class_acl_layers': ablation_config.per_class_acl_layers,
+            'acl_gate': ablation_config.acl_gate,
+            'acl_gate_init': ablation_config.acl_gate_init,
+            'acl_gate_l1_lambda': ablation_config.acl_gate_l1_lambda,
+            'acl_weight_decay': ablation_config.acl_weight_decay,
             'spatial_var_lambda': ablation_config.spatial_var_lambda,
         },
         'score_smooth_sigma': ablation_config.score_smooth_sigma,

@@ -9,7 +9,7 @@ direct inclusion in a paper table.
 Pipeline stages measured:
   1. Backbone  -- Feature extraction (CNN or ViT, frozen)
   2. Router    -- Prototype-based task routing (Mahalanobis distance)
-  3. NF        -- Normalizing Flow forward pass (PE + InputAdapter + base + LoRA + ACB)
+  3. NF        -- Normalizing Flow forward pass (PE + InputAdapter + base + LoRA + ACL)
   4. Score Map -- Anomaly score computation + bicubic upsampling to msk_size
 
 Note on Router timing:
@@ -163,7 +163,7 @@ def main():
 
     continual_tasks = parse_cl_scenario(cl_scenario, task_classes_list)
     num_tasks = len(continual_tasks)
-    acb_n_blocks = ablation_dict.get("acb_n_blocks", 0)
+    acl_n_layers = ablation_dict.get("acl_n_layers", 0)
 
     # ------------------------------------------------------------------
     # Print configuration
@@ -174,7 +174,7 @@ def main():
     print(f"  Checkpoint  : {args.checkpoint_path}")
     print(f"  Backbone    : {backbone_name}")
     print(f"  Embed Dim   : {embed_dim}")
-    print(f"  DCL + ACL   : {num_coupling_layers} + {acb_n_blocks}")
+    print(f"  DCL + ACL   : {num_coupling_layers} + {acl_n_layers}")
     print(f"  LoRA Rank   : {lora_rank}")
     print(f"  Image Size  : {img_size}x{img_size}")
     print(f"  Mask Size   : {msk_size}x{msk_size}")
@@ -419,7 +419,7 @@ def main():
     print("=" * 70)
     print(
         f"  Model   : {backbone_name}, {embed_dim}d, "
-        f"DCL{num_coupling_layers}+ACL{acb_n_blocks}, LoRA r={lora_rank}"
+        f"DCL{num_coupling_layers}+ACL{acl_n_layers}, LoRA r={lora_rank}"
     )
     print(f"  Input   : {img_size}x{img_size} -> Score Map: {msk_size}x{msk_size}")
     if use_high_res:

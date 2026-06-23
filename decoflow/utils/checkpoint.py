@@ -2,7 +2,7 @@
 Checkpoint utilities for saving and loading model state.
 
 Saves after each task:
-- NF model state_dict (base weights, LoRA adapters, ACB blocks, input adapters)
+- NF model state_dict (base weights, LoRA adapters, ACL layers, input adapters)
 - Router prototypes (mean, covariance, precision per task)
 - Reference feature statistics (mean, std)
 - Config snapshot
@@ -35,7 +35,7 @@ def save_checkpoint(
     task_dir = os.path.join(save_dir, f"task_{task_id}")
     os.makedirs(task_dir, exist_ok=True)
 
-    # 1. Save NF model state_dict (includes base, LoRA, ACB, input_adapters)
+    # 1. Save NF model state_dict (includes base, LoRA, ACL, input_adapters)
     model_path = os.path.join(task_dir, "nf_model.pth")
     torch.save(nf_model.state_dict(), model_path)
 

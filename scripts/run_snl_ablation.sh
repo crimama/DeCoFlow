@@ -15,28 +15,28 @@ COMMON="--dataset mvtec --data_path /Volume/MVTecAD \
     --scale_context_kernel 5 --score_smooth_sigma 0.0"
 
 # -----------------------------------------------------------------
-# GPU 0: Full SNL (0 DCL + 8 ACB, default hidden_ratio=0.5)
-# All blocks are task-specific ACB. No shared base at all.
+# GPU 0: Full SNL (0 DCL + 8 ACL, default hidden_ratio=0.5)
+# All layers are task-specific ACL. No shared base at all.
 # -----------------------------------------------------------------
-echo "=== [GPU 0] V62_01: Full SNL (0 DCL + 8 ACB, hr=0.5) ==="
+echo "=== [GPU 0] V62_01: Full SNL (0 DCL + 8 ACL, hr=0.5) ==="
 CUDA_VISIBLE_DEVICES=0 nohup python run_decoflow.py $COMMON \
     --num_coupling_layers 0 \
-    --acb_n_blocks 8 \
-    --acb_hidden_ratio 0.5 \
-    --experiment_name "V62_01_FullSNL_8acb_hr05" \
-    > logs/V62_01_FullSNL_8acb_hr05.log 2>&1 &
+    --acl_n_layers 8 \
+    --acl_hidden_ratio 0.5 \
+    --experiment_name "V62_01_FullSNL_8acl_hr05" \
+    > logs/V62_01_FullSNL_8acl_hr05.log 2>&1 &
 PID0=$!
 echo "  PID=$PID0"
 
 # -----------------------------------------------------------------
-# GPU 1: Decompose + Linear (6 DCL with full independent subnets + 2 ACB)
+# GPU 1: Decompose + Linear (6 DCL with full independent subnets + 2 ACL)
 # Uses use_regular_linear: each task gets independent full-rank subnets
 # No shared base in DCL subnets (base exists as template, not used)
 # -----------------------------------------------------------------
 echo "=== [GPU 1] V62_02: Decompose + Linear (use_regular_linear) ==="
 CUDA_VISIBLE_DEVICES=1 nohup python run_decoflow.py $COMMON \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --use_regular_linear \
     --experiment_name "V62_02_DecompLinear_regularlinear" \
     > logs/V62_02_DecompLinear_regularlinear.log 2>&1 &
@@ -44,28 +44,28 @@ PID1=$!
 echo "  PID=$PID1"
 
 # -----------------------------------------------------------------
-# GPU 2: Full SNL capacity-matched (0 DCL + 8 ACB, hidden_ratio=2.0)
-# ACB blocks with same capacity as DCL subnets for fair comparison
+# GPU 2: Full SNL capacity-matched (0 DCL + 8 ACL, hidden_ratio=2.0)
+# ACL layers with same capacity as DCL subnets for fair comparison
 # -----------------------------------------------------------------
 echo "=== [GPU 2] V62_03: Full SNL capacity-matched (hr=2.0) ==="
 CUDA_VISIBLE_DEVICES=2 nohup python run_decoflow.py $COMMON \
     --num_coupling_layers 0 \
-    --acb_n_blocks 8 \
-    --acb_hidden_ratio 2.0 \
-    --experiment_name "V62_03_FullSNL_8acb_hr20" \
-    > logs/V62_03_FullSNL_8acb_hr20.log 2>&1 &
+    --acl_n_layers 8 \
+    --acl_hidden_ratio 2.0 \
+    --experiment_name "V62_03_FullSNL_8acl_hr20" \
+    > logs/V62_03_FullSNL_8acl_hr20.log 2>&1 &
 PID2=$!
 echo "  PID=$PID2"
 
 # -----------------------------------------------------------------
-# GPU 3: Decompose + LoRA high-rank (rank=512, 6 DCL + 2 ACB)
+# GPU 3: Decompose + LoRA high-rank (rank=512, 6 DCL + 2 ACL)
 # Base frozen + near-full-rank adapter
 # Tests if low-rank LoRA is truly sufficient
 # -----------------------------------------------------------------
 echo "=== [GPU 3] V62_04: Decompose + LoRA rank=512 ==="
 CUDA_VISIBLE_DEVICES=3 nohup python run_decoflow.py $COMMON \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --lora_rank 512 \
     --experiment_name "V62_04_DecompLoRA_rank512" \
     > logs/V62_04_DecompLoRA_rank512.log 2>&1 &
@@ -80,7 +80,7 @@ echo "  GPU 2 (Full SNL hr=2.0):     PID=$PID2"
 echo "  GPU 3 (Decompose+LoRA r512): PID=$PID3"
 echo ""
 echo "Monitor with:"
-echo "  tail -f logs/V62_01_FullSNL_8acb_hr05.log"
+echo "  tail -f logs/V62_01_FullSNL_8acl_hr05.log"
 echo "  tail -f logs/V62_02_DecompLinear_regularlinear.log"
-echo "  tail -f logs/V62_03_FullSNL_8acb_hr20.log"
+echo "  tail -f logs/V62_03_FullSNL_8acl_hr20.log"
 echo "  tail -f logs/V62_04_DecompLoRA_rank512.log"

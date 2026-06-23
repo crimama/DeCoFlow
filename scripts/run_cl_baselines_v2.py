@@ -3,7 +3,7 @@
 CL Baselines Script for DeCoFlow.
 
 Implements standard continual learning baselines (Finetune, EWC, LwF, Replay)
-on the same NF backbone used by DeCoFlow, but WITHOUT LoRA/ACB/TaskSpecificAlignment.
+on the same NF backbone used by DeCoFlow, but WITHOUT LoRA/ACL/TaskSpecificAlignment.
 This provides a fair comparison: same architecture, same training setup,
 different CL strategy.
 
@@ -555,11 +555,11 @@ def main():
     pos_embed_2d = positionalencoding2d(embed_dim, pos_embed_hw, pos_embed_hw)
     pos_embed = pos_embed_2d.permute(1, 2, 0).unsqueeze(0).to(device)
 
-    # Create NF model (baseline: no LoRA, no ACB, no TaskSpecificAlignment)
+    # Create NF model (baseline: no LoRA, no ACL, no TaskSpecificAlignment)
     ablation_cfg = AblationConfig(
         use_lora=False,
         use_tsa=False,
-        use_acb=False,
+        use_acl=False,
         use_router=False,
         use_task_adapter=False,
         use_pos_embedding=True,

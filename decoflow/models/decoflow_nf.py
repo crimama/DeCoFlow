@@ -14,7 +14,7 @@ import FrEIA.modules as Fm
 
 from decoflow.models.position_embedding import positionalencoding2d
 
-from decoflow.models.dcl import DCLSubnet, DCLContextSubnet, LightweightMSContext, TaskConditionedMSContext, AuxiliaryCouplingBlocks, PerTaskLatentAffine
+from decoflow.models.dcl import DCLSubnet, DCLContextSubnet, LightweightMSContext, TaskConditionedMSContext, AuxiliaryCouplingLayer, PerTaskLatentAffine
 from decoflow.models.adapters import (
     FeatureStatistics, TaskInputAdapter, create_task_adapter, SpatialContextMixer, TaskSpecificAlignment,
     SemanticProjector, TaskAdaptiveContextMixer, LightweightGlobalContext,  # V5 modules
@@ -88,12 +88,12 @@ class DeCoFlowNF(nn.Module):
             self.use_tsa = False
             self.use_adaptive_unfreeze = False
             self.adaptive_unfreeze_ratio = 0.4
-            # V3 ACB defaults
-            self.use_acb = False
-            self.acb_n_blocks = 2
-            self.acb_hidden_ratio = 0.5
-            self.acb_subnet_type = 'fc'
-            self.acb_kernel_size = 3
+            # V3 ACL defaults
+            self.use_acl = False
+            self.acl_n_layers = 2
+            self.acl_hidden_ratio = 0.5
+            self.acl_subnet_type = 'fc'
+            self.acl_kernel_size = 3
             # V3 Task-Conditioned MS Context defaults
             self.use_task_conditioned_ms_context = False
             self.tc_ms_context_dilations = (1, 2, 4)
@@ -173,19 +173,19 @@ class DeCoFlowNF(nn.Module):
             self.use_tsa = ablation_config.use_tsa
             self.use_adaptive_unfreeze = ablation_config.use_adaptive_unfreeze
             self.adaptive_unfreeze_ratio = ablation_config.adaptive_unfreeze_ratio
-            # V3 ACB settings
-            self.use_acb = ablation_config.use_acb
-            self.acb_n_blocks = ablation_config.acb_n_blocks
-            self.acb_hidden_ratio = ablation_config.acb_hidden_ratio
-            # V45: ACB gating and per-class ACB
-            self.per_class_acb_blocks = getattr(ablation_config, 'per_class_acb_blocks', '')
-            self.acb_gate = getattr(ablation_config, 'acb_gate', False)
-            self.acb_gate_init = getattr(ablation_config, 'acb_gate_init', 0.0)
+            # V3 ACL settings
+            self.use_acl = ablation_config.use_acl
+            self.acl_n_layers = ablation_config.acl_n_layers
+            self.acl_hidden_ratio = ablation_config.acl_hidden_ratio
+            # V45: ACL gating and per-class ACL
+            self.per_class_acl_layers = getattr(ablation_config, 'per_class_acl_layers', '')
+            self.acl_gate = getattr(ablation_config, 'acl_gate', False)
+            self.acl_gate_init = getattr(ablation_config, 'acl_gate_init', 0.0)
             self.spatial_var_lambda = getattr(ablation_config, 'spatial_var_lambda', 0.0)
-            self._acb_spatial_var_loss = None
-            # V46: Spatial ACB settings
-            self.acb_subnet_type = getattr(ablation_config, 'acb_subnet_type', 'fc')
-            self.acb_kernel_size = getattr(ablation_config, 'acb_kernel_size', 3)
+            self._acl_spatial_var_loss = None
+            # V46: Spatial ACL settings
+            self.acl_subnet_type = getattr(ablation_config, 'acl_subnet_type', 'fc')
+            self.acl_kernel_size = getattr(ablation_config, 'acl_kernel_size', 3)
             # V3 Task-Conditioned MS Context settings
             self.use_task_conditioned_ms_context = ablation_config.use_task_conditioned_ms_context
             self.tc_ms_context_dilations = ablation_config.tc_ms_context_dilations
@@ -268,12 +268,12 @@ class DeCoFlowNF(nn.Module):
         # Task-specific input adapters for pre-conditioning
         self.input_adapters = nn.ModuleDict()
 
-        # V3: Deep Invertible Adapters (ACB) per task
+        # V3: Deep Invertible Adapters (ACL) per task
         # Applied AFTER base NF for nonlinear manifold adaptation
-        self.acb_adapters = nn.ModuleDict()
+        self.acl_adapters = nn.ModuleDict()
 
         # Per-Task Latent Affine transforms
-        # Lightweight post-flow per-task adaptation (alternative to ACB)
+        # Lightweight post-flow per-task adaptation (alternative to ACL)
         self.latent_affines = nn.ModuleDict()
 
         # V6: Complete Separated Mode - independent NF for each task
@@ -636,13 +636,13 @@ class DeCoFlowNF(nn.Module):
 
         return flow.to(self.device)
 
-    def _get_acb_n_blocks(self, class_name=None):
-        """Get ACB n_blocks for a given class (V45 per-class ACB support)."""
-        if self.per_class_acb_blocks and class_name:
+    def _get_acl_n_layers(self, class_name=None):
+        """Get ACL n_layers for a given class (V45 per-class ACL support)."""
+        if self.per_class_acl_layers and class_name:
             import json
-            blocks_dict = json.loads(self.per_class_acb_blocks)
-            return blocks_dict.get(class_name, 1)  # default=1 block
-        return self.acb_n_blocks
+            layers_dict = json.loads(self.per_class_acl_layers)
+            return layers_dict.get(class_name, 1)  # default=1 layer
+        return self.acl_n_layers
 
     def add_task(self, task_id: int, class_name: str = None):
         """
@@ -684,19 +684,19 @@ class DeCoFlowNF(nn.Module):
                     soft_ln_init_scale=self.soft_ln_init_scale
                 ).to(self.device)
 
-            # V3: Add ACB for Task 0 (all tasks get ACB for uniform treatment)
-            if self.use_acb:
-                acb_blocks = self._get_acb_n_blocks(class_name)
-                self.acb_adapters[task_key] = AuxiliaryCouplingBlocks(
+            # V3: Add ACL for Task 0 (all tasks get ACL for uniform treatment)
+            if self.use_acl:
+                acl_layers = self._get_acl_n_layers(class_name)
+                self.acl_adapters[task_key] = AuxiliaryCouplingLayer(
                     channels=self.embed_dim,
                     task_id=task_id,
-                    n_blocks=acb_blocks,
-                    hidden_ratio=self.acb_hidden_ratio,
+                    n_layers=acl_layers,
+                    hidden_ratio=self.acl_hidden_ratio,
                     clamp_alpha=self.clamp_alpha,
-                    use_gate=self.acb_gate,
-                    gate_init=self.acb_gate_init,
-                    subnet_type=self.acb_subnet_type,
-                    kernel_size=self.acb_kernel_size
+                    use_gate=self.acl_gate,
+                    gate_init=self.acl_gate_init,
+                    subnet_type=self.acl_subnet_type,
+                    kernel_size=self.acl_kernel_size
                 ).to(self.device)
 
             # Per-Task Latent Affine for Task 0
@@ -715,8 +715,8 @@ class DeCoFlowNF(nn.Module):
                 if self.adapter_mode == "soft_ln":
                     adapter_info += f" [init_scale={self.soft_ln_init_scale}]"
                 components.append(adapter_info)
-            if self.use_acb:
-                components.append(f"ACB ({self.acb_n_blocks} blocks)")
+            if self.use_acl:
+                components.append(f"ACL ({self.acl_n_layers} layers)")
             if self.use_latent_affine:
                 components.append("LatentAffine")
 
@@ -777,22 +777,22 @@ class DeCoFlowNF(nn.Module):
                     soft_ln_init_scale=self.soft_ln_init_scale
                 ).to(self.device)
 
-            # V3: Add ACB for Task > 0 (nonlinear manifold adaptation)
-            if self.use_acb:
-                acb_blocks = self._get_acb_n_blocks(class_name)
-                self.acb_adapters[task_key] = AuxiliaryCouplingBlocks(
+            # V3: Add ACL for Task > 0 (nonlinear manifold adaptation)
+            if self.use_acl:
+                acl_layers = self._get_acl_n_layers(class_name)
+                self.acl_adapters[task_key] = AuxiliaryCouplingLayer(
                     channels=self.embed_dim,
                     task_id=task_id,
-                    n_blocks=acb_blocks,
-                    hidden_ratio=self.acb_hidden_ratio,
+                    n_layers=acl_layers,
+                    hidden_ratio=self.acl_hidden_ratio,
                     clamp_alpha=self.clamp_alpha,
-                    use_gate=self.acb_gate,
-                    gate_init=self.acb_gate_init,
-                    subnet_type=self.acb_subnet_type,
-                    kernel_size=self.acb_kernel_size
+                    use_gate=self.acl_gate,
+                    gate_init=self.acl_gate_init,
+                    subnet_type=self.acl_subnet_type,
+                    kernel_size=self.acl_kernel_size
                 ).to(self.device)
-                print(f"   🔄 [V3] ACB added: {acb_blocks} coupling blocks [{self.acb_subnet_type}]"
-                      + (f" (gate init={self.acb_gate_init})" if self.acb_gate else ""))
+                print(f"   🔄 [V3] ACL added: {acl_layers} coupling layers [{self.acl_subnet_type}]"
+                      + (f" (gate init={self.acl_gate_init})" if self.acl_gate else ""))
 
             # Per-Task Latent Affine for Task > 0
             if self.use_latent_affine:
@@ -815,8 +815,8 @@ class DeCoFlowNF(nn.Module):
                     elif self.adapter_mode == "no_ln_after_task0":
                         adapter_info += " [LN=OFF]"
                     components.append(adapter_info)
-                if self.use_acb:
-                    components.append(f"ACB ({self.acb_n_blocks} blocks)")
+                if self.use_acl:
+                    components.append(f"ACL ({self.acl_n_layers} layers)")
                 if self.use_latent_affine:
                     components.append("LatentAffine")
 
@@ -891,7 +891,7 @@ class DeCoFlowNF(nn.Module):
         Add adapters for a specific class (class-level mode).
 
         This method is called when use_class_level_adapters=True.
-        Creates separate LoRA, ACB, and InputAdapter for each class,
+        Creates separate LoRA, ACL, and InputAdapter for each class,
         allowing finer-grained learning when multiple classes are grouped
         into a single task (step).
 
@@ -924,16 +924,16 @@ class DeCoFlowNF(nn.Module):
                     soft_ln_init_scale=self.soft_ln_init_scale
                 ).to(self.device)
 
-            # Add ACB for this class
-            if self.use_acb:
-                self.acb_adapters[class_key] = AuxiliaryCouplingBlocks(
+            # Add ACL for this class
+            if self.use_acl:
+                self.acl_adapters[class_key] = AuxiliaryCouplingLayer(
                     channels=self.embed_dim,
-                    task_id=class_id,  # Use class_id for ACB
-                    n_blocks=self.acb_n_blocks,
-                    hidden_ratio=self.acb_hidden_ratio,
+                    task_id=class_id,  # Use class_id for ACL
+                    n_layers=self.acl_n_layers,
+                    hidden_ratio=self.acl_hidden_ratio,
                     clamp_alpha=self.clamp_alpha,
-                    subnet_type=self.acb_subnet_type,
-                    kernel_size=self.acb_kernel_size
+                    subnet_type=self.acl_subnet_type,
+                    kernel_size=self.acl_kernel_size
                 ).to(self.device)
 
             # Add Latent Affine for this class
@@ -947,8 +947,8 @@ class DeCoFlowNF(nn.Module):
                 components.append(f"LoRA (rank={self.lora_rank})")
             if self.use_task_adapter:
                 components.append(f"InputAdapter ({self.adapter_mode})")
-            if self.use_acb:
-                components.append(f"ACB ({self.acb_n_blocks} blocks [{self.acb_subnet_type}])")
+            if self.use_acl:
+                components.append(f"ACL ({self.acl_n_layers} layers [{self.acl_subnet_type}])")
             if self.use_latent_affine:
                 components.append("LatentAffine")
 
@@ -976,16 +976,16 @@ class DeCoFlowNF(nn.Module):
                     soft_ln_init_scale=self.soft_ln_init_scale
                 ).to(self.device)
 
-            # Add ACB for this class
-            if self.use_acb:
-                self.acb_adapters[class_key] = AuxiliaryCouplingBlocks(
+            # Add ACL for this class
+            if self.use_acl:
+                self.acl_adapters[class_key] = AuxiliaryCouplingLayer(
                     channels=self.embed_dim,
                     task_id=class_id,
-                    n_blocks=self.acb_n_blocks,
-                    hidden_ratio=self.acb_hidden_ratio,
+                    n_layers=self.acl_n_layers,
+                    hidden_ratio=self.acl_hidden_ratio,
                     clamp_alpha=self.clamp_alpha,
-                    subnet_type=self.acb_subnet_type,
-                    kernel_size=self.acb_kernel_size
+                    subnet_type=self.acl_subnet_type,
+                    kernel_size=self.acl_kernel_size
                 ).to(self.device)
 
             # Add Latent Affine for this class
@@ -999,8 +999,8 @@ class DeCoFlowNF(nn.Module):
                 components.append(f"LoRA (rank={self.lora_rank})")
             if self.use_task_adapter:
                 components.append(f"InputAdapter ({self.adapter_mode})")
-            if self.use_acb:
-                components.append(f"ACB ({self.acb_n_blocks} blocks)")
+            if self.use_acl:
+                components.append(f"ACL ({self.acl_n_layers} layers)")
             if self.use_latent_affine:
                 components.append("LatentAffine")
 
@@ -1053,7 +1053,7 @@ class DeCoFlowNF(nn.Module):
         task_id = self.class_to_task.get(class_id, 0)
 
         if task_id == 0:
-            # Task 0 classes: Base parameters + LoRA + InputAdapter + ACB
+            # Task 0 classes: Base parameters + LoRA + InputAdapter + ACL
             for subnet in self.subnets:
                 if self.use_regular_linear:
                     for p in subnet.parameters():
@@ -1087,15 +1087,15 @@ class DeCoFlowNF(nn.Module):
             if class_key in self.input_adapters:
                 params.extend(self.input_adapters[class_key].parameters())
 
-            # ACB for this class
-            if class_key in self.acb_adapters:
-                params.extend(self.acb_adapters[class_key].parameters())
+            # ACL for this class
+            if class_key in self.acl_adapters:
+                params.extend(self.acl_adapters[class_key].parameters())
 
             # Latent Affine for this class
             if class_key in self.latent_affines:
                 params.extend(self.latent_affines[class_key].parameters())
         else:
-            # Task > 0 classes: LoRA/full-rank + InputAdapter + ACB only
+            # Task > 0 classes: LoRA/full-rank + InputAdapter + ACL only
             for subnet in self.subnets:
                 if self.use_regular_linear:
                     if hasattr(subnet, 'task_layers') and class_key in subnet.task_layers:
@@ -1118,9 +1118,9 @@ class DeCoFlowNF(nn.Module):
             if class_key in self.input_adapters:
                 params.extend(self.input_adapters[class_key].parameters())
 
-            # ACB
-            if class_key in self.acb_adapters:
-                params.extend(self.acb_adapters[class_key].parameters())
+            # ACL
+            if class_key in self.acl_adapters:
+                params.extend(self.acl_adapters[class_key].parameters())
 
             # Latent Affine
             if class_key in self.latent_affines:
@@ -1177,9 +1177,9 @@ class DeCoFlowNF(nn.Module):
             if task_key in self.input_adapters:
                 params.extend(self.input_adapters[task_key].parameters())
 
-            # V3: ACB parameters
-            if task_key in self.acb_adapters:
-                params.extend(self.acb_adapters[task_key].parameters())
+            # V3: ACL parameters
+            if task_key in self.acl_adapters:
+                params.extend(self.acl_adapters[task_key].parameters())
 
             # Latent Affine parameters
             if task_key in self.latent_affines:
@@ -1223,9 +1223,9 @@ class DeCoFlowNF(nn.Module):
             if task_key in self.input_adapters:
                 params.extend(self.input_adapters[task_key].parameters())
 
-            # V3: ACB parameters for Task 0
-            if task_key in self.acb_adapters:
-                params.extend(self.acb_adapters[task_key].parameters())
+            # V3: ACL parameters for Task 0
+            if task_key in self.acl_adapters:
+                params.extend(self.acl_adapters[task_key].parameters())
 
             # Latent Affine parameters for Task 0
             if task_key in self.latent_affines:
@@ -1258,9 +1258,9 @@ class DeCoFlowNF(nn.Module):
             if task_key in self.input_adapters:
                 params.extend(self.input_adapters[task_key].parameters())
 
-            # V3: ACB parameters for Task > 0
-            if task_key in self.acb_adapters:
-                params.extend(self.acb_adapters[task_key].parameters())
+            # V3: ACL parameters for Task > 0
+            if task_key in self.acl_adapters:
+                params.extend(self.acl_adapters[task_key].parameters())
 
             # Latent Affine parameters for Task > 0
             if task_key in self.latent_affines:
@@ -1436,25 +1436,25 @@ class DeCoFlowNF(nn.Module):
         # Reshape back to spatial
         z = z_flat.reshape(B, H, W, D)
 
-        # V3: Apply ACB (Auxiliary Coupling Blocks) if enabled
-        # ACB is applied AFTER base NF for nonlinear manifold adaptation
-        if self.use_acb and self.current_task_id is not None:
+        # V3: Apply ACL (Auxiliary Coupling Layer) if enabled
+        # ACL is applied AFTER base NF for nonlinear manifold adaptation
+        if self.use_acl and self.current_task_id is not None:
             task_key = str(self.current_task_id)
-            if task_key in self.acb_adapters:
-                acb = self.acb_adapters[task_key]
-                # V45/V46: Compute spatial variance before ACB
+            if task_key in self.acl_adapters:
+                acl = self.acl_adapters[task_key]
+                # V45/V46: Compute spatial variance before ACL
                 # V46 fix: use dim=(1,2) for true spatial variance, not dim=-1 (channel var)
                 if self.spatial_var_lambda > 0 and not reverse:
                     var_before = z.var(dim=(1, 2)).mean()
-                z, acb_logdet = acb(z, reverse=reverse)
-                logdet_patch = logdet_patch + acb_logdet
-                # V45/V46: Compute spatial variance loss after ACB
+                z, acl_logdet = acl(z, reverse=reverse)
+                logdet_patch = logdet_patch + acl_logdet
+                # V45/V46: Compute spatial variance loss after ACL
                 if self.spatial_var_lambda > 0 and not reverse:
                     var_after = z.var(dim=(1, 2)).mean()
-                    self._acb_spatial_var_loss = torch.relu(var_before - var_after)
+                    self._acl_spatial_var_loss = torch.relu(var_before - var_after)
 
         # Apply Per-Task Latent Affine if enabled
-        # Applied AFTER ACB (or directly after base NF if ACB is off)
+        # Applied AFTER ACL (or directly after base NF if ACL is off)
         if self.use_latent_affine and self.current_task_id is not None:
             task_key = str(self.current_task_id)
             if task_key in self.latent_affines:
@@ -1465,13 +1465,13 @@ class DeCoFlowNF(nn.Module):
 
         return z, logdet_patch
 
-    def get_acb_gate_l1_loss(self):
-        """V45: Get L1 loss on ACB gate parameters (encourages smaller gates)."""
+    def get_acl_gate_l1_loss(self):
+        """V45: Get L1 loss on ACL gate parameters (encourages smaller gates)."""
         task_key = str(self.current_task_id) if self.current_task_id is not None else None
-        if task_key and task_key in self.acb_adapters:
-            acb = self.acb_adapters[task_key]
-            l1 = torch.tensor(0.0, device=next(acb.parameters()).device)
-            for block in acb.coupling_blocks:
+        if task_key and task_key in self.acl_adapters:
+            acl = self.acl_adapters[task_key]
+            l1 = torch.tensor(0.0, device=next(acl.parameters()).device)
+            for block in acl.coupling_blocks:
                 if hasattr(block, 'use_gate') and block.use_gate:
                     l1 = l1 + torch.sigmoid(block.gate_raw)
             return l1
@@ -1632,9 +1632,9 @@ class DeCoFlowNF(nn.Module):
         if task_key in self.input_adapters:
             params.extend(self.input_adapters[task_key].parameters())
 
-        # V3: ACB parameters (part of FAST stage)
-        if task_key in self.acb_adapters:
-            params.extend(self.acb_adapters[task_key].parameters())
+        # V3: ACL parameters (part of FAST stage)
+        if task_key in self.acl_adapters:
+            params.extend(self.acl_adapters[task_key].parameters())
 
         # Latent Affine parameters (part of FAST stage)
         if task_key in self.latent_affines:
@@ -1677,9 +1677,9 @@ class DeCoFlowNF(nn.Module):
             for param in self.input_adapters[task_key].parameters():
                 param.requires_grad = False
 
-        # V3: Freeze ACB parameters
-        if task_key in self.acb_adapters:
-            for param in self.acb_adapters[task_key].parameters():
+        # V3: Freeze ACL parameters
+        if task_key in self.acl_adapters:
+            for param in self.acl_adapters[task_key].parameters():
                 param.requires_grad = False
 
         # Freeze Latent Affine parameters
@@ -1723,9 +1723,9 @@ class DeCoFlowNF(nn.Module):
             for param in self.input_adapters[task_key].parameters():
                 param.requires_grad = True
 
-        # V3: Unfreeze ACB parameters
-        if task_key in self.acb_adapters:
-            for param in self.acb_adapters[task_key].parameters():
+        # V3: Unfreeze ACL parameters
+        if task_key in self.acl_adapters:
+            for param in self.acl_adapters[task_key].parameters():
                 param.requires_grad = True
 
         # Unfreeze Latent Affine parameters

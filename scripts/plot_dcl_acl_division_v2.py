@@ -115,7 +115,7 @@ ax.text(7.5, 5, "ACL", ha="center", fontsize=10, color=ACL_RED,
 # =====================================================================
 ax = axes[1]
 
-stages = ["Input", "After DCL\n(6 blocks)", "After ACL\n(+2 blocks)"]
+stages = ["Input", "After DCL\n(6 blocks)", "After ACL\n(+2 layers)"]
 y_pos = np.array([2, 1, 0])
 
 # Metrics to show

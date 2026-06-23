@@ -1,15 +1,15 @@
 #!/bin/bash
-# Core Component Ablation Study (DCL6+ACB2 기준)
-# MAIN: NCL=6, ACB=2, lr=3e-4, logdet=1e-4, scale_k=5, epochs=60
+# Core Component Ablation Study (DCL6+ACL2 기준)
+# MAIN: NCL=6, ACL=2, lr=3e-4, logdet=1e-4, scale_k=5, epochs=60
 # GPU: 0, 1, 4, 5
 
 TASK_CLASSES="bottle cable capsule carpet grid hazelnut leather metal_nut pill screw tile toothbrush transistor wood zipper"
 DATA_PATH="/Data/MVTecAD"
-LOG_BASE="/Volume/DeCoFlow/logs/Ablation/DCL6-ACB2-Component"
+LOG_BASE="/Volume/DeCoFlow/logs/Ablation/DCL6-ACL2-Component"
 
 mkdir -p $LOG_BASE
 
-# MAIN settings (DCL6+ACB2)
+# MAIN settings (DCL6+ACL2)
 COMMON_ARGS="--dataset mvtec \
     --data_path $DATA_PATH \
     --task_classes $TASK_CLASSES \
@@ -19,7 +19,7 @@ COMMON_ARGS="--dataset mvtec \
     --lora_rank 64 \
     --batch_size 16 \
     --num_coupling_layers 6 \
-    --acb_n_blocks 2 \
+    --acl_n_layers 2 \
     --use_tsa \
     --use_tail_aware_loss \
     --tail_weight 0.7 \
