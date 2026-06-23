@@ -1,0 +1,36 @@
+# DeCoFlow Default Configuration
+
+# Basic settings
+seed: 0
+gpu: "0"
+
+# Dataset settings
+dataset: "mvtec"
+data_path: "/Volume/MVTecAD"
+
+# Image settings
+img_size: 518
+msk_size: 256
+
+# Training hyperparameters
+lr: 0.0001
+lr_decay_epochs: [48, 57, 88]
+lr_decay_rate: 0.1
+lr_warm: true
+lr_warm_epochs: 2
+lr_cosine: true
+meta_epochs: 4
+sub_epochs: 3
+batch_size: 16
+
+# Model architecture
+backbone_name: "vit_base_patch14_dinov2.lvd142m"
+coupling_layers: 8
+clamp_alpha: 1.9
+lora_rank: 32
+lora_alpha: 1.0
+
+# Continual learning
+ewc_lambda: 500.0
+slow_lr_ratio: 0.2
+slow_blocks_k: 2

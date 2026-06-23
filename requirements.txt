@@ -1,0 +1,26 @@
+# DeCoFlow: Structural Decomposition for Continual Anomaly Detection
+# Core dependencies
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Normalizing Flow
+FrEIA>=0.2
+
+# Vision Transformer
+timm>=0.9.0
+
+# Optimizer
+adamp>=0.3.0  # AdamP: Slowing Down the Slowdown for Momentum Optimizers
+
+# Utilities
+numpy>=1.21.0
+scipy>=1.7.0
+scikit-learn>=1.0.0
+easydict>=1.9
+tqdm>=4.62.0
+
+# Image Processing
+opencv-python>=4.5.0
+Pillow>=9.0.0
