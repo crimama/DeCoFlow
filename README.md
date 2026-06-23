@@ -2,6 +2,10 @@
 
 Structural Decomposition of Normalizing Flows for Continual Anomaly Detection.
 
+<p align="center">
+  <img src="assets/main_figure_clean.jpg" alt="DeCoFlow framework overview" width="900">
+</p>
+
 This repository contains the code-only release of DeCoFlow. The public naming follows the paper:
 
 - `DeCoFlow`: overall framework
